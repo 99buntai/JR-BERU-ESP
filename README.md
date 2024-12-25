@@ -28,6 +28,9 @@ A Japanese train station departure bell and announcement system simulator with w
   - Direction indicators
 - **Real-time Controls**: Instant response to user input
 - **Password Protection**: Basic authentication OTA update ability for security
+![alt text](Demo-img/webui.png.png)
+
+
 
 ### 🔧 System Features
 - **WiFi Manager**: Easy WiFi configuration for setup
