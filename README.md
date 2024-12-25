@@ -113,10 +113,10 @@ The SD card file system must follow this structure:
 
 ## Hardware installation 
 
-- Housing installation
+- Housing installation (Cut away all the orginal contactor and glue in a momentary switch.)
 <img width="347" alt="Screenshot 2024-12-25 at 16 15 23" src="https://github.com/user-attachments/assets/b7926b30-5ec6-492a-8f21-e18ed6cb1226" />
 
-- Type c port to esp8266 board
+- Make a Type c port to esp8266 board.
 <img width="218" alt="Screenshot 2024-12-25 at 16 15 10" src="https://github.com/user-attachments/assets/42d0ba40-b03e-414c-a4b5-ffe235fed302" />
 
 - Final installation 
@@ -127,6 +127,7 @@ The SD card file system must follow this structure:
 ## Web Interface Access
 
 - **URL**: `http://[device-ip]`
+<img src="https://github.com/user-attachments/assets/da28639d-7efb-4e0b-ba38-c74ee062fd0b" alt="WEB-UI" style="width:20%; height:auto; ">
 
 ---
 
