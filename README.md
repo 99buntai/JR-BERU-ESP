@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/d483ad4e-555a-42a0-9bc5-4ab3171fd644
 ### 🎧 Control Methods
 
 - **Physical Button Control**:
-  - Single press: Start melody loop.
+  - Single press: Start melody loop(will random play by default, random play can be toggled in the web interface).
   - Release: Play ATOS announcement followed by door chime.
 - **Web Interface Control**:
   - Audio selection for all sound types.
