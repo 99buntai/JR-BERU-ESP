@@ -182,18 +182,18 @@ Web server started!
 ## Credits
 
 - Station melodies and announcements are the property of JR East.
-- Web interface design inspired by JR Yamanote Line station [signage.](https://github.com/99buntai/JR-BERU-ESP/issues)
-- [B](https://github.com/99buntai/JR-BERU-ESP/issues)uilt using the ESP8266 A[rduino Core and D](https://github.com/99buntai/JR-BERU-ESP/issues)FRobotDFPlayerMini library.
+- Web interface design inspired by JR Yamanote Line station signage.
+- Built using the ESP8266 Arduino Core and DFRobotDFPlayerMini library.
 
 ---
 
 ## License
 
-This project is released under the MIT License. See the `L`[`ICENSE`](https://github.com/99buntai/JR-BERU-ESP/issues)[ file f](https://github.com/99buntai/JR-BERU-ESP/issues)or details.
+This project is released under the MIT License. See the `LICENSE` file for details.
 
 ---
 
 ## Support
 
-For issues and feature request[s, please use](https://github.com/99buntai/JR-BERU-ESP/issues) the [GitHub Issues](https://github.com/99buntai/JR-BERU-ESP/issues) page.
+For issues and feature requests, please use the [GitHub Issues](https://github.com/99buntai/JR-BERU-ESP/issues) page.
 
