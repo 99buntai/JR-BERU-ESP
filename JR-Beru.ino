@@ -507,7 +507,7 @@ void handleRoot() {
           "<label>Volume</label>"
           "<input type='range' class='volume-slider' id='volumeControl' min='0' max='30' "
           "value='" + String(globalVolume) + "' oninput='setVolume(this.value)'>"
-          "<span id='volumeValue'>" + String(globalVolume) + "</span>"
+          "<span id='volumeValue' style='min-width: 25px;'>" + String(globalVolume) + "</span>"
           "</div>"
           
           // Platform Announcement Button
@@ -551,6 +551,7 @@ void handleRoot() {
 
           "function setVolume(value) {"
           "  fetch('/setVolume?value=' + value, { method: 'GET' });"
+          "  document.getElementById('volumeValue').textContent = value;"
           "}"
 
           "function reinitDFPlayer() {"
