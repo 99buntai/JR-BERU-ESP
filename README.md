@@ -90,26 +90,9 @@ SD card must be formatted as FAT32 and contain the following folders:
   - WiFi connection stability improvements
 
 ## Serial Monitoring
-The device outputs detailed status information via Serial (115200 baud rate). You can monitor these messages using the Arduino IDE's Serial Monitor or any serial terminal.
+  - The device outputs detailed status information via Serial (115200 baud rate). 
+  - You can monitor these messages using the Arduino IDE's Serial Monitor or any serial terminal.
 
-### Boot Sequence Output
-
-===================
-JR-Beru Booting
-===================
-Firmware Version: MCU-RX.X.X WebUI-RX.X.X
-Initializing MP3-Player ... (May take 3~5 seconds)
-MP3-Player online.
-=======Audio File Count:=======
-Melody Files: X
-Atos Files: X
-DoorChime Files: X
-VA Files: X
-===============================
-Starting Wifi Manager...
-Wifi Manager Started!
-Web server started!
-========Boot up Completed!========
 
 ### Audio Playback Status
 The serial output provides real-time information about audio playback:
