@@ -61,13 +61,18 @@ A Japanese train station departure bell and announcement system hardware replica
 
 ---
 
-## Pin Configuration
+## Pin Configuration/Wiring
 
 | Pin | Function          |
 | --- | ----------------- |
 | D5  | DFPlayer RX       |
 | D6  | DFPlayer TX       |
 | D4  | Main Button Input |
+
+<img src="https://github.com/user-attachments/assets/32dc37f2-a0c2-441c-9ef2-05b297558cea" alt="Wiring" style="width:20%; height:auto; ">
+
+
+
 
 ---
 
