@@ -33,8 +33,7 @@ A Japanese train station departure bell and announcement system hardware replica
   - Line Marker displaying (e.g., JY03).
   - Direction indicators for prev/next stations.
 - **Real-time Controls**: Instant feedback and response to user inputs.
-
-![alt text](https://github.com/99buntai/JR-BERU-ESP/blob/main/Demo-img/webui.png)
+<img width="290" alt="webui" src="https://github.com/user-attachments/assets/fdc681fc-0363-404c-851e-f0f0ec019ecc" />
 
 
 
