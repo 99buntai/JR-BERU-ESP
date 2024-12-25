@@ -113,7 +113,7 @@ The SD card file system must follow this structure:
 
 ## Hardware installation 
 
-- Housing installation (Cut away all the orginal contactor and glue in a momentary switch.)
+- Housing installation (Cut away all the original contactor and glue in a momentary switch.)
 <img width="347" alt="Screenshot 2024-12-25 at 16 15 23" src="https://github.com/user-attachments/assets/b7926b30-5ec6-492a-8f21-e18ed6cb1226" />
 
 - Make a Type c port to esp8266 board.
