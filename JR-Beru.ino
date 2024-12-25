@@ -501,21 +501,21 @@ String populateOptions(const char* folderName, int count, int selectedOption) {
 //=========================UpdateFileCount==========================
 
 void UpdateFileCount() {
-    Serial.println(F("=======Audio File Count:======="));
-    
-    MelodyCount = CheckFileInFolder(MelodyFolder);
+   Serial.println(F("=======Audio File Count:======="));
+
+   MelodyCount = CheckFileInFolder(MelodyFolder);
     Serial.printf_P(PSTR("Melody Files: %d\n"), MelodyCount);
-    
-    AtosCount = CheckFileInFolder(AtosFolder);
+
+   AtosCount = CheckFileInFolder(AtosFolder);
     Serial.printf_P(PSTR("Atos Files: %d\n"), AtosCount);
-    
+
     DoorChimeCount = CheckFileInFolder(DoorChimeFolder);
     Serial.printf_P(PSTR("DoorChime Files: %d\n"), DoorChimeCount);
-    
-    VACount = CheckFileInFolder(VAFolder);
+
+   VACount = CheckFileInFolder(VAFolder);
     Serial.printf_P(PSTR("VA Files: %d\n"), VACount);
     
-    Serial.println(F("==============================="));
+   Serial.println(F("==============================="));
 }
 
 //=========================PlayCurrentAudio==========================
@@ -567,18 +567,18 @@ int CheckFileInFolder(int folder) {
 void handleButton() {
     // Use millis() once instead of multiple calls
     unsigned long currentTime = millis();
-    int reading = digitalRead(MainButtonPin);
+  int reading = digitalRead(MainButtonPin);
 
-    if (reading != lastMainButtonState) {
+  if (reading != lastMainButtonState) {
         lastDebounceTime = currentTime;
-    }
+  }
 
     if ((currentTime - lastDebounceTime) > debounceDelay && reading != MainButtonState) {
-        MainButtonState = reading;
-        
+      MainButtonState = reading;
+
         if (MainButtonState == LOW) {
             if (!loopPlaying) {
-                handlePlayMelody();
+          handlePlayMelody();
                 myDFPlayer.enableLoop(); // Call only once
                 loopPlaying = true;
                 AtosLastPlayed = false;
@@ -586,13 +586,13 @@ void handleButton() {
         } else if (loopPlaying) {
             myDFPlayer.disableLoop();
             myDFPlayer.stop();
-            loopPlaying = false;
+          loopPlaying = false;
             handlePlayAtos();
-            AtosLastPlayed = true;
-        }
+          AtosLastPlayed = true;
     }
-    
-    lastMainButtonState = reading;
+  }
+
+  lastMainButtonState = reading;
 }
 
 
@@ -608,7 +608,7 @@ void toggleRandomPlay() {
 //================================Handle Audio=============================
 
 void playAudio(int folder, int currentTrack, int totalTracks) {
-    DonePlaying = false;
+ DonePlaying = false;
     if (RandomPlayOn) {
         PlayRandomAudio(folder, totalTracks);
     } else {
