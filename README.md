@@ -79,7 +79,7 @@ A Japanese train station departure bell and announcement system hardware replica
 ## Audio File Structure
 
 The SD card file system must follow this structure:
-SD File system can be downloaded here: https://github.com/99buntai/JR-BERU-ESP/releases/download/R0.3.7R2.0.5/SD-files-241225.zip
+
 
 ```
 /01/  # Departure melodies
@@ -87,6 +87,7 @@ SD File system can be downloaded here: https://github.com/99buntai/JR-BERU-ESP/r
 /03/  # Door chime sounds
 /04/  # Platform announcements
 ```
+ - SD File system can be downloaded here: https://github.com/99buntai/JR-BERU-ESP/releases/download/R0.3.7R2.0.5/SD-files-241225.zip
 
 ---
 
