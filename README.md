@@ -4,7 +4,7 @@ A Japanese train station departure bell and announcement system hardware replica
 
 ![Edited_Demo_Image](https://github.com/user-attachments/assets/e69d89e7-2854-455d-899f-9492c6638674)
 
-
+<img src="[image-url](https://github.com/user-attachments/assets/e69d89e7-2854-455d-899f-9492c6638674)" alt="Alt Text" width="300" height="200">
 
 ---
 
