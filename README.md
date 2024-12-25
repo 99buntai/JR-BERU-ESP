@@ -86,7 +86,7 @@ The SD card file system must follow this structure:
 /03/  # Door chime sounds
 /04/  # Platform announcements
 ```
-
+SD File system can be downloaded here: https://github.com/99buntai/JR-BERU-ESP/releases/download/R0.3.7R2.0.5/SD-files-241225.zip
 ---
 
 ## Setup Instructions
