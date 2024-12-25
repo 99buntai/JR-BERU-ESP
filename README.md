@@ -107,13 +107,13 @@ The SD card file system must follow this structure:
 ## Hardware installation 
 
 - Housing installation
-<img width="647" alt="Screenshot 2024-12-25 at 16 15 23" src="https://github.com/user-attachments/assets/b7926b30-5ec6-492a-8f21-e18ed6cb1226" />
+<img width="347" alt="Screenshot 2024-12-25 at 16 15 23" src="https://github.com/user-attachments/assets/b7926b30-5ec6-492a-8f21-e18ed6cb1226" />
 
 - Type c port to esp8266 board
-<img width="518" alt="Screenshot 2024-12-25 at 16 15 10" src="https://github.com/user-attachments/assets/42d0ba40-b03e-414c-a4b5-ffe235fed302" />
+<img width="218" alt="Screenshot 2024-12-25 at 16 15 10" src="https://github.com/user-attachments/assets/42d0ba40-b03e-414c-a4b5-ffe235fed302" />
 
 - Final installation 
-<img width="749" alt="Screenshot 2024-12-25 at 16 14 58" src="https://github.com/user-attachments/assets/9a75d714-3629-457a-b01a-fbb4c9df8dc0" />
+<img width="349" alt="Screenshot 2024-12-25 at 16 14 58" src="https://github.com/user-attachments/assets/9a75d714-3629-457a-b01a-fbb4c9df8dc0" />
 
 ---
 
