@@ -33,7 +33,8 @@ A Japanese train station departure bell and announcement system hardware replica
   - Line Marker displaying (e.g., JY03).
   - Direction indicators for prev/next stations.
 - **Real-time Controls**: Instant feedback and response to user inputs.
-<img width="290" alt="webui" src="https://github.com/user-attachments/assets/fdc681fc-0363-404c-851e-f0f0ec019ecc" />
+
+<img width="294" alt="Screenshot 2024-12-25 at 14 20 59" src="https://github.com/user-attachments/assets/da28639d-7efb-4e0b-ba38-c74ee062fd0b" />
 
 
 
@@ -112,6 +113,12 @@ The SD card file system must follow this structure:
 ---
 
 ## Version History
+
+### **MCU-R0.3.7 WebUI-R2.0.5**
+
+- More accurate station sign display.
+- Improved audio control reliability.
+- Added Reset DF-Player support in WebUI.
 
 ### **MCU-R0.3.5 WebUI-R2.0.2**
 
