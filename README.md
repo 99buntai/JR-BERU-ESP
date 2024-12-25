@@ -56,7 +56,7 @@ A Japanese train station departure bell and announcement system hardware replica
 - **DFPlayer Mini MP3 Player**
 - **SD Card**: Formatted as FAT32 with audio files.
 - **Speaker**: Suitable for MP3 playback.
-- **Push Button**: Recommended: BSW215B3.
+- **Push Button**: [KASUGA BSW215B3.](https://www.amazon.co.jp/-/en/Electric-BSW215B3AB-Switcher-Rainproof-BSW/dp/B07KQ5P8YG)
 - **Power Supply**: 5V regulated power source.
 
 ---
@@ -69,7 +69,7 @@ A Japanese train station departure bell and announcement system hardware replica
 | D6  | DFPlayer TX       |
 | D4  | Main Button Input |
 
-<img src="https://github.com/user-attachments/assets/32dc37f2-a0c2-441c-9ef2-05b297558cea" alt="Wiring" style="width:20%; height:auto; ">
+<img src="https://github.com/user-attachments/assets/32dc37f2-a0c2-441c-9ef2-05b297558cea" alt="Wiring" style="width:40%; height:auto; ">
 
 
 
