@@ -17,9 +17,9 @@ https://github.com/user-attachments/assets/d483ad4e-555a-42a0-9bc5-4ab3171fd644
 ### 🚂 Audio Playback
 
 - **Departure Melodies**: JR station departure melodies
-- **ATOS Announcements**: Yamanote Line ATOS announcements.
+- **ATOS Announcements**: Yamanote Line ATOS announcements.(Current file system only contains ATOS for the Yamanote Line)
 - **Door Chimes**: Door opening and closing sounds.
-- **Platform Announcements**: JR station platform announcements.
+- **Platform Announcements**: JR station platform announcements.(Current file system only contains announcements for the Yamanote Line)
 - New audio files can be added to the SD Card. device will re-index on reboot.
 
 ### 🎧 Control Methods
