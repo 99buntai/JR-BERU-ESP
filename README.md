@@ -37,9 +37,9 @@ https://github.com/user-attachments/assets/d483ad4e-555a-42a0-9bc5-4ab3171fd644
 
 - **Responsive Design**: Fully functional on both desktop and mobile devices.
 - **Station Sign Display**:
-  - JR station signage design (Static for now, can be changed to dynamic with further development).
+  - JR station signage design (Static for now, can be dynamic with further development, all text are variables).
   - Multilingual station names (Japanese, Korean, English).
-  - Line Marker displaying (e.g., JY03).
+  - Line Marker displaying (e.g., JY03)(Created with only html/css code,no online resources required) .
   - Direction indicators for prev/next stations.
 - **Real-time Controls**: Instant feedback and response to user inputs.
 
