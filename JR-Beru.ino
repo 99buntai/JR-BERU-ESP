@@ -16,7 +16,7 @@ void printDetail(uint8_t type, int value);
 //================================
 // Global Configuration Constants
 //================================
-#define FW_VERSION      "MCU-R0.3.5 WebUI-R2.0.2"  // Current firmware version
+#define FW_VERSION      "MCU-R0.3.7 WebUI-R2.0.5"  // Current firmware version
 
 // Audio folder mappings on SD card
 int MelodyFolder = 1;    // /01/ - Contains departure melodies
@@ -59,20 +59,35 @@ const char* HTTP_PASSWORD = "beru";
 char ssid[32];  // Stores SSID of the WiFi network
 char pass[32];  // Stores password of the WiFi network
 
+
+
+//=============================Station Sign Configuration===========================
+// Line and Station Code
+const char* lineCode = "AKB";          // Top text in black area
+const char* stationCodeLine = "JY";     // Line code in green box
+const char* stationNumber = "03";       // Station number in green box
+
+// Station Names
 // Japanese text stored as UTF-8 encoded hex values
-const char* stationNameJa = "\xE7\xA7\x8B\xE8\x91\x89\xE5\x8E\x9F"; // 秋葉原
+const char* stationNameJa = "\xE7\xA7\x8B\xE8\x91\x89\xE5\x8E\x9F";         // 秋葉原
 const char* stationNameHiragana = "\xE3\x81\x82\xE3\x81\x8D\xE3\x81\xAF\xE3\x81\xB0\xE3\x82\x89"; // あきはばら
-const char* prevStation = "\xE7\xA5\x9E\xE7\x94\xB0"; // 神田
-const char* nextStation = "\xE5\xBE\xA1\xE5\xBE\x92\xE7\x94\xBA"; // 御徒町
-const char* wardLabel = "\xE5\xB1\xB1\xE5\x8C\xBA"; // 山区
+const char* stationNameKo = "\xEC\x95\x84\xED\x82\xA4\xED\x95\x98\xEB\xB0\x94\xEB\x9D\xBC";       // 아키하바라
+const char* stationNameEn = "Akihabara"; // English name
 
-// Korean text
-const char* stationNameKo = "\xEC\x95\x84\xED\x82\xA4\xED\x95\x98\xEB\xB0\x94\xEB\x9D\xBC"; // 아키하바라
+// Direction Information
+const char* prevStation = "\xE7\xA5\x9E\xE7\x94\xB0";           // 神田 (Previous station)
+const char* prevStationEn = "Kanda";                            // Previous station English
+const char* nextStation = "\xE5\xBE\xA1\xE5\xBE\x92\xE7\x94\xBA"; // 御徒町 (Next station)
+const char* nextStationEn = "Okachimachi";                      // Next station English
 
-// Regular ASCII text can be stored normally
-const char* stationNameEn = "Akihabara";
-const char* stationCodeLine = "JY";
-const char* stationNumber = "03";
+// Ward Label
+const char* wardLabel = "\xE5\xB1\xB1\xE5\x8C\xBA";            // 山区
+const char* wardBox = "\xE5\xB1\xB1";                          // 山 (Character in box)
+//==================================================================================
+
+
+
+
 
 //================================WiFi and Server Setup=============================
 void saveConfigCallback() {shouldSaveConfig = true;}
@@ -191,6 +206,15 @@ void setup()
     });
   
 
+  server.on("/reinitDFPlayer", HTTP_GET, []() {
+    myDFPlayer.reset();
+    Serial.println(F("====DFPlayer Reinitialized!===="));
+    delay(100);
+    myDFPlayer.volume(globalVolume);
+    UpdateFileCount();
+    server.send(200, "text/plain", "DFPlayer reinitialized");
+  });
+
   server.begin();
   Serial.println(F("Web server started!"));
   Serial.println(F("========Boot up Completed!========"));
@@ -297,38 +321,46 @@ void handleRoot() {
                 "box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }"
                 
                 // Content container
-                ".station-content { display: flex; justify-content: center; align-items: flex-start; }"
+                ".station-content { position: relative; width: 100%; display: flex; justify-content: center; "
+                "max-width: 800px; margin: 0 auto; }"
                 
                 // Line marker (AKB/JY03)
-                ".line-marker { width: 53px; height: 72px; background: #000; border-radius: 10px; "
-                "box-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-right: 15px; position: relative; }"
+                ".line-marker { position: absolute; top: 0; transform: translateX(-100%) translateX(-40px); "
+                "width: 48px; height: 65px; background: #000; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }"
                 
-                ".line-code-akb { position: absolute; top: 6px; left: 0; right: 0; color: white; "
-                "font-weight: bold; font-size: 16px; text-align: center; }"
+                ".line-code-akb { position: absolute; top: 0; left: 0; right: 0; color: white; "
+                "font-weight: bold; font-size: 14px; text-align: center; }"
                 
-                ".station-number-container { position: absolute; top: 28px; left: 6px; right: 6px; bottom: 6px; "
-                "background: #80C241; border-radius: 6px; padding: 2px; }"
+                ".station-number-container { position: absolute; top: 20px; left: 4px; right: 4px; bottom: 4px; "
+                "background: #80C241; border-radius: 6px; padding: 3px; }"
                 
                 ".station-number-inner { background: white; border-radius: 4px; height: 100%; width: 100%; "
                 "display: flex; flex-direction: column; justify-content: center; align-items: center; }"
                 
-                ".line-code-jy { color: #000; font-weight: bold; font-size: 15px; line-height: 1; margin-bottom: 2px; }"
-                ".line-number { color: #000; font-weight: bold; font-size: 16px; line-height: 1; }"
+                ".line-code-jy { color: #000; font-weight: bold; font-size: 14px; line-height: 1; margin-bottom: 2px; }"
+                ".line-number { color: #000; font-weight: bold; font-size: 15px; line-height: 1; }"
                 
                 // Station info
-                ".station-info { display: flex; flex-direction: column; }"
+                ".station-info { position: relative; display: flex; flex-direction: column; align-items: center; }"
                 
-                ".station-name-ja { font-size: 38px; font-weight: bold; line-height: 1.2; "
-                "font-family: 'MS Gothic', 'Yu Gothic', sans-serif; margin-bottom: 3px; }"
+                ".station-name-ja { position: relative; display: inline-block; font-size: 38px; font-weight: bold; "
+                "line-height: 1.2; font-family: 'MS Gothic', 'Yu Gothic', sans-serif; margin-bottom: 3px; }"
                 
-                ".station-name-hiragana { font-size: 16px; color: #333; margin-bottom: 3px; }"
-                ".station-name-ko { font-size: 14px; color: #666; margin-bottom: 12px; }"
+                ".station-name-hiragana { font-size: 16px; color: #333; margin-bottom: 3px; text-align: center; }"
+                ".station-name-ko { font-size: 14px; color: #666; margin-bottom: 12px; text-align: center; }"
                 
                 // Ward label
-                ".ward-label { position: absolute; top: 15px; right: 15px; background: #444; color: white; "
-                "padding: 4px 6px; border-radius: 3px; font-size: 12px; display: flex; align-items: center; }"
+                ".ward-label { position: absolute; top: 15px; right: 50px; display: flex; gap: 1px; }"
                 
-                ".ward-box { border: 1px solid white; padding: 1px 3px; margin-right: 2px; }"
+                // Box with white background - made square with border radius
+                ".ward-box { background: white; color: black; width: 16px; height: 16px; "
+                "border: 1px solid black; border-radius: 2px; display: flex; align-items: center; "
+                "justify-content: center; font-size: 12px; }"
+                
+                // Black background text - matched to box dimensions
+                ".ward-text { background: black; color: white; width: 16px; height: 16px; "
+                "border-radius: 2px; display: flex; align-items: center; justify-content: center; "
+                "font-size: 12px; }"
                 
                 // Direction bar
                 ".direction-bar { background: #006400; margin: 0 -15px; height: 32px; "
@@ -353,6 +385,28 @@ void handleRoot() {
                 ".station-name-en-right { width: 33%; text-align: right; }"
                 ".station-names-container { display: flex; justify-content: space-between; padding: 5px 15px; }"
                 
+                // Direction bar and names container - maintain center alignment
+                ".direction-bar, .station-names-container { width: 100%; max-width: 700px; margin: 0 auto; }"
+                
+                // Control layout
+                ".controls-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px; }"
+
+                // Control items
+                ".control-item { display: flex; align-items: center; gap: 10px; }"
+                ".control-item.right { justify-content: flex-end; }"
+                ".control-item label { font-size: 0.95rem; color: #555; }"
+
+                // Volume container
+                ".volume-container { grid-column: 1 / -1; display: flex; align-items: center; gap: 15px; }"
+
+                // Button styles
+                ".btn-primary { background: #2196F3; color: white; }"
+                ".btn-secondary { background: #757575; color: white; }"
+                ".btn-warning { background: #ff9800; color: white; }"
+                ".btn { border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; "
+                "font-size: 0.9rem; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }"
+                ".btn:hover { filter: brightness(1.1); }"
+                
                 "</style></head><body>"
                 
                 "<div class='navbar'><h1>" + 
@@ -364,7 +418,7 @@ void handleRoot() {
   html += "<div class='station-sign'>"
           "<div class='station-content'>"
           "<div class='line-marker'>"
-          "<div class='line-code-akb'>AKB</div>"
+          "<div class='line-code-akb'>" + String(lineCode) + "</div>"
           "<div class='station-number-container'>"
           "<div class='station-number-inner'>"
           "<div class='line-code-jy'>" + String(stationCodeLine) + "</div>"
@@ -379,7 +433,8 @@ void handleRoot() {
           "</div>"
           "</div>"
           "<div class='ward-label'>"
-          "<span class='ward-box'>山</span>区"
+          "<div class='ward-box'>" + String(wardBox) + "</div>"
+          "<div class='ward-text'>" + String(wardLabel).substring(3) + "</div>"
           "</div>"
           "<div class='direction-bar'>"
           "<div class='station-indicator'></div>"
@@ -391,9 +446,9 @@ void handleRoot() {
           "</div>"
           "</div>"
           "<div class='station-names-container'>"
-          "<span class='station-name-en station-name-en-left'>Kanda</span>"
-          "<span class='station-name-en station-name-en-center current'>Akihabara</span>"
-          "<span class='station-name-en station-name-en-right'>Okachimachi</span>"
+          "<span class='station-name-en station-name-en-left'>" + String(prevStationEn) + "</span>"
+          "<span class='station-name-en station-name-en-center current'>" + String(stationNameEn) + "</span>"
+          "<span class='station-name-en station-name-en-right'>" + String(nextStationEn) + "</span>"
           "</div>";
 
   // Audio Controls Panel
@@ -431,19 +486,37 @@ void handleRoot() {
   // Playback Controls Panel
   html += "<div class='panel'>"
           "<div class='panel-header'>Playback Controls</div>"
-          "<div class='control-group'>"
-          "<label class='control-label'>Random Play</label>"
+          "<div class='controls-grid'>"
+          
+          // Random Play Toggle
+          "<div class='control-item'>"
+          "<label>Random Play</label>"
           "<div class='toggle-switch' onclick='toggleSwitch(\"toggleRandomPlay\")'>"
           "<input type='checkbox' id='toggleRandomPlay' " + String(RandomPlayOn ? "checked" : "") + ">"
-          "<span class='slider'></span></div></div>"
+          "<span class='slider'></span>"
+          "</div>"
+          "</div>"
           
-          "<div class='control-group'>"
-          "<label class='control-label'>Volume</label>"
+          // Reinit DFPlayer Button
+          "<div class='control-item right'>"
+          "<button class='btn btn-warning' onclick='reinitDFPlayer()'>Reinit DFPlayer</button>"
+          "</div>"
+          
+          // Volume Control
+          "<div class='volume-container'>"
+          "<label>Volume</label>"
           "<input type='range' class='volume-slider' id='volumeControl' min='0' max='30' "
-          "value='" + String(globalVolume) + "' oninput='setVolume(this.value)'></div>"
+          "value='" + String(globalVolume) + "' oninput='setVolume(this.value)'>"
+          "<span id='volumeValue'>" + String(globalVolume) + "</span>"
+          "</div>"
           
-          "<div class='control-group'>"
-          "<button class='btn' onclick='playVA()'>Play Platform Announcement</button></div>"
+          // Platform Announcement Button
+          "<div class='control-item' style='grid-column: 1 / -1;'>"
+          "<button class='btn btn-primary' style='width: 100%;' onclick='playVA()'>"
+          "Play Platform Announcement</button>"
+          "</div>"
+          
+          "</div>"
           "</div>";
 
   // Version info
@@ -478,6 +551,11 @@ void handleRoot() {
 
           "function setVolume(value) {"
           "  fetch('/setVolume?value=' + value, { method: 'GET' });"
+          "}"
+
+          "function reinitDFPlayer() {"
+          "  fetch('/reinitDFPlayer', { method: 'GET' });"
+          "  alert('DFPlayer reinitialization requested');"
           "}"
           "</script></body></html>";
 
