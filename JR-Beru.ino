@@ -169,7 +169,6 @@ void setup()
     });
     
     
-    
     server.on("/setVolume", HTTP_GET, []() {
     String value = server.arg("value");
     if (value != "") {
