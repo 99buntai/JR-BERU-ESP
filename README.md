@@ -20,6 +20,7 @@ https://github.com/user-attachments/assets/d483ad4e-555a-42a0-9bc5-4ab3171fd644
 - **ATOS Announcements**: Yamanote Line ATOS announcements.
 - **Door Chimes**: Door opening and closing sounds.
 - **Platform Announcements**: JR station platform announcements.
+- New audio files can be added to the SD Card. device will re-index on reboot.
 
 ### 🎧 Control Methods
 
