@@ -34,7 +34,7 @@ A Japanese train station departure bell and announcement system hardware replica
   - Direction indicators for prev/next stations.
 - **Real-time Controls**: Instant feedback and response to user inputs.
 
-  ![alt text]\([https://github.com/99buntai/JR-BERU-ESP/blob/main/Demo-img/webui.png](https://github.com/99buntai/JR-BERU-ESP/blob/main/Demo-img/webui.png))
+![alt text](https://github.com/99buntai/JR-BERU-ESP/blob/main/Demo-img/webui.png)
 
 
 
