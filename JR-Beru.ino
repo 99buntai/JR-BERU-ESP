@@ -67,6 +67,12 @@ const char* lineCode = "AKB";          // Top text in black area
 const char* stationCodeLine = "JY";     // Line code in green box
 const char* stationNumber = "03";       // Station number in green box
 
+// Colors
+const char* lineMarkerBgColor = "#000000";      // Line marker background color
+const char* lineNumberBgColor = "#80C241";      // Station number container background color
+const char* directionBarBgColor = "#006400";    // Direction bar background color
+const char* stationIndicatorColor = "#82c03b";  // Current station indicator color
+
 // Station Names
 // Japanese text stored as UTF-8 encoded hex values
 const char* stationNameJa = "\xE7\xA7\x8B\xE8\x91\x89\xE5\x8E\x9F";         // 秋葉原
@@ -325,13 +331,14 @@ void handleRoot() {
                 
                 // Line marker (AKB/JY03)
                 ".line-marker { position: absolute; top: 0; transform: translateX(-100%) translateX(-40px); "
-                "width: 48px; height: 65px; background: #000; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }"
+                "width: 48px; height: 65px; background: " + String(lineMarkerBgColor) + "; border-radius: 8px; "
+                "box-shadow: 0 2px 4px rgba(0,0,0,0.2); }"
                 
                 ".line-code-akb { position: absolute; top: 0; left: 0; right: 0; color: white; "
                 "font-weight: bold; font-size: 14px; text-align: center; }"
                 
-                ".station-number-container { position: absolute; top: 20px; left: 4px; right: 4px; bottom: 4px; "
-                "background: #80C241; border-radius: 6px; padding: 3px; }"
+                ".station-number-container { position: absolute; top: 23px; left: 4px; right: 4px; bottom: 4px; "
+                "background: " + String(lineNumberBgColor) + "; border-radius: 6px; padding: 3px; }"
                 
                 ".station-number-inner { background: white; border-radius: 4px; height: 100%; width: 100%; "
                 "display: flex; flex-direction: column; justify-content: center; align-items: center; }"
@@ -362,14 +369,14 @@ void handleRoot() {
                 "font-size: 12px; }"
                 
                 // Direction bar
-                ".direction-bar { background: #006400; margin: 0 -15px; height: 32px; "
+                ".direction-bar { background: " + String(directionBarBgColor) + "; margin: 0 -15px; height: 32px; "
                 "display: flex; justify-content: space-between; align-items: center; color: white; position: relative; "
                 "clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%); "
                 "overflow: visible; }"
                 
                 // Station indicator
                 ".station-indicator { position: absolute; top: 0; left: 50%; transform: translateX(-50%); "
-                "width: 32px; height: 32px; background: #82c03b; }"
+                "width: 32px; height: 32px; background: " + String(stationIndicatorColor) + "; }"
                 
                 // Direction stations
                 ".direction-left { padding-left: 15px; width: 33%; text-align: left; }"
