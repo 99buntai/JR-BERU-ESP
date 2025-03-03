@@ -1868,7 +1868,7 @@ void handleFileUpload() {
       uploadError = "File too large, max size is 100KB";
       
       // Close and delete the partial file
-      if (fsUploadFile) {fsUploadFile.close();SPIFFS.remove(tempFilename);}
+      if (fsUploadFile) {fsUploadFile.close();PIFFS.remove(tempFilename);}
       // Send error response to frontend
       server.send(400, "application/json", "{\"error\":\"" + uploadError + "\"}");
       return;
