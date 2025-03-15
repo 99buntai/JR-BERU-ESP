@@ -1046,7 +1046,7 @@
         <div class="bottom-panels">
             <!-- Configuration File panel -->
             <div class="editor-panel">
-                <h3>Station Config File Editor V1.1.2</h3>
+                <h3>Station Config File Editor V1.2.0</h3>
                 <div class="config-file-section">
                     <div class="config-file-input control-item">
                         <label for="configFilename">Config Filename</label>
@@ -1330,14 +1330,13 @@
                 // Update station name edit field
                 document.getElementById('stationNameEdit').value = stationName;
 
-                // Update station information
-                if (station.stationInfo) {
-                    document.getElementById('stationCode').value = station.stationInfo.stationCode || '';
-                    document.getElementById('stationNameJa').value = station.stationInfo.nameJa || '';
-                    document.getElementById('stationNameHiragana').value = station.stationInfo.nameHiragana || '';
-                    document.getElementById('stationNameKo').value = station.stationInfo.nameKo || '';
-                    document.getElementById('wardBox').value = station.stationInfo.wardBox || '';
-                }
+                // Use only new property names
+                const stationInfo = station.sInfo;
+                document.getElementById('stationCode').value = stationInfo.sC || '';
+                document.getElementById('stationNameJa').value = stationInfo.Ja || '';
+                document.getElementById('stationNameHiragana').value = stationInfo.Hi || '';
+                document.getElementById('stationNameKo').value = stationInfo.Ko || '';
+                document.getElementById('wardBox').value = stationInfo.wB || '';
                 
                 updateTrackSelect();
                 updatePreview();
@@ -1358,13 +1357,27 @@
 
             const line = configData.lines[lineCode];//get line
             const station = line?.stations[stationName];//get station
-            const track = station?.tracks[trackNumber];//get track
+            
+            // Use only new property names
+            const tracks = station?.Trk;
+            const track = tracks?.[trackNumber];
             
             if (!line || !station || !track) return;//check if line, station, and track are empty
 
             try {
                 const preview = document.getElementById('stationSignPreview');//get preview
-                const hasStationCode = !!station.stationInfo.stationCode;//check if station code is empty
+                
+                // Use only new property names
+                const stationInfo = station.sInfo;
+                const hasStationCode = !!stationInfo.sC;
+                
+                // Use only new property names
+                const lineMarker = track.Marker;
+                
+                // Use only new property names
+                const direction = track.Dir;
+                const prev = direction.p;
+                const next = direction.n;
                 
                 preview.innerHTML = `
                     <div class="station-sign">
@@ -1372,37 +1385,37 @@
                             <div class="line-marker" style="${hasStationCode ? 
                                 `background: ${line.style?.lineMarkerBgColor || '#000000'}` : 
                                 'background: transparent; box-shadow: none; transform: translate(-55px, -16px)'}">
-                                <div class="line-code-akb">${station.stationInfo.stationCode || ''}</div>
+                                <div class="line-code-akb">${stationInfo.sC || ''}</div>
                                 <div class="station-number-container" style="background: ${line.style?.lineNumberBgColor || '#80C241'}">
                                     <div class="station-number-inner">
-                                        <div class="line-code-jy">${track.lineMarker?.lineCode || ''}</div>
-                                        <div class="line-number">${track.lineMarker?.stationNumber || ''}</div>
+                                        <div class="line-code-jy">${lineMarker.LC || ''}</div>
+                                        <div class="line-number">${lineMarker.sNum || ''}</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="station-info">
-                                <div class="station-name-ja">${station.stationInfo.nameJa || ''}</div>
-                                <div class="station-name-hiragana">${station.stationInfo.nameHiragana || ''}</div>
-                                <div class="station-name-ko">${station.stationInfo.nameKo || ''}</div>
+                                <div class="station-name-ja">${stationInfo.Ja || ''}</div>
+                                <div class="station-name-hiragana">${stationInfo.Hi || ''}</div>
+                                <div class="station-name-ko">${stationInfo.Ko || ''}</div>
                             </div>
                         </div>
                         <div class="ward-label">
-                            <div class="ward-box">${station.stationInfo.wardBox || ''}</div>
+                            <div class="ward-box">${stationInfo.wB || ''}</div>
                             <div class="ward-text">区</div>
                         </div>
                         <div class="direction-bar" style="background: ${line.style?.directionBarBgColor || '#006400'}">
                             <div class="station-indicator" style="background: ${line.style?.lineNumberBgColor || '#80C241'}"></div>
                             <div class="direction-left">
-                                <span class="direction-station">${track.direction.prev?.nameJa || ''}</span>
+                                <span class="direction-station">${prev.Ja || ''}</span>
                             </div>
                             <div class="direction-right">
-                                <span class="direction-station">${track.direction.next?.nameJa || ''}</span>
+                                <span class="direction-station">${next.Ja || ''}</span>
                             </div>
                         </div>
                         <div class="station-names-container">
-                            <span class="station-name-en station-name-en-left">${track.direction.prev?.nameEn || ''}</span>
+                            <span class="station-name-en station-name-en-left">${prev.En || ''}</span>
                             <span class="station-name-en station-name-en-center current">${stationName}</span>
-                            <span class="station-name-en station-name-en-right">${track.direction.next?.nameEn || ''}</span>
+                            <span class="station-name-en station-name-en-right">${next.En || ''}</span>
                         </div>
                     </div>`;
                 
@@ -1426,24 +1439,24 @@
         //create default track
         function createDefaultTrack(lineCode) {
             return {
-                "lineMarker": {
-                    "lineCode": lineCode,
-                    "stationNumber": "01"
+                "Marker": {
+                    "LC": lineCode,
+                    "sNum": "01"
                 },
                 "audio": {
                     "melody": 1,
                     "atos": 1,
-                    "doorChime": 1,
+                    "dC": 1,
                     "va": 1
                 },
-                "direction": {
-                    "prev": {
-                        "nameJa": "前の駅",
-                        "nameEn": "Previous Station"
+                "Dir": {
+                    "p": {
+                        "Ja": "前の駅",
+                        "En": "Previous Station"
                     },
-                    "next": {
-                        "nameJa": "次の駅",
-                        "nameEn": "Next Station"
+                    "n": {
+                        "Ja": "次の駅",
+                        "En": "Next Station"
                     }
                 }
             };
@@ -1468,14 +1481,14 @@
                         },
                         stations: {
                             "Sample Station": {
-                                "stationInfo": {
-                                    "stationCode": "SMP",
-                                    "nameJa": "サンプル駅",
-                                    "nameHiragana": "さんぷるえき",
-                                    "nameKo": "샘로운역",
-                                    "wardBox": "山"
+                                "sInfo": {
+                                    "sC": "SMP",
+                                    "Ja": "サンプル駅",
+                                    "Hi": "さんぷるえき",
+                                    "Ko": "샘로운역",
+                                    "wB": "山"
                                 },
-                                "tracks": {
+                                "Trk": {
                                     "track1": createDefaultTrack(lineCode)
                                 }
                             }
@@ -1522,50 +1535,50 @@
                 
                 // Use current station as the previous station for the new one
                 if (currentStation && configData.lines[lineCode].stations[currentStation]) {
-                    const currentStationInfo = configData.lines[lineCode].stations[currentStation].stationInfo;
-                    prevStationJa = currentStationInfo.nameJa || "前の駅";
+                    const currentStationInfo = configData.lines[lineCode].stations[currentStation].sInfo;
+                    prevStationJa = currentStationInfo.Ja || "前の駅";
                     prevStationEn = currentStation;
                 } else if (existingStations.length > 0) {
                     // Get the last station in the list to use as the previous station
                     const lastStation = existingStations[existingStations.length - 1];
-                    const lastStationInfo = configData.lines[lineCode].stations[lastStation].stationInfo;
+                    const lastStationInfo = configData.lines[lineCode].stations[lastStation].sInfo;
                     
                     if (lastStationInfo) {
                         // Use the last station's Japanese and English names
-                        prevStationJa = lastStationInfo.nameJa || "前の駅";
-                        prevStationEn = lastStationInfo.nameEn || lastStation;
+                        prevStationJa = lastStationInfo.Ja || "前の駅";
+                        prevStationEn = lastStation;
                     }
                 }
                 
                 // Create new station with default values
                 configData.lines[lineCode].stations[stationName] = {
-                    "stationInfo": {
-                        "nameJa": nextStationJa && nextStationJa !== "次の駅" ? nextStationJa : "新しい駅",
-                        "stationCode": "",
-                        "nameHiragana": "あたらしいえき",
-                        "nameKo": "새로운역",
-                        "wardBox": "山"
+                    "sInfo": {
+                        "Ja": nextStationJa && nextStationJa !== "次の駅" ? nextStationJa : "新しい駅",
+                        "sC": "",
+                        "Hi": "あたらしいえき",
+                        "Ko": "새로운역",
+                        "wB": "山"
                     },
-                    "tracks": {
+                    "Trk": {
                         "track1": {
-                            "lineMarker": {
-                                "lineCode": lineCode,
-                                "stationNumber": "01"
+                            "Marker": {
+                                "LC": lineCode,
+                                "sNum": "01"
                             },
                             "audio": {
                                 "melody": 1,
                                 "atos": 1,
-                                "doorChime": 1,
+                                "dC": 1,
                                 "va": 1
                             },
-                            "direction": {
-                                "prev": {
-                                    "nameJa": prevStationJa,
-                                    "nameEn": prevStationEn
+                            "Dir": {
+                                "p": {
+                                    "Ja": prevStationJa,
+                                    "En": prevStationEn
                                 },
-                                "next": {
-                                    "nameJa": "次の駅",
-                                    "nameEn": "Next Station"
+                                "n": {
+                                    "Ja": "次の駅",
+                                    "En": "Next Station"
                                 }
                             }
                         }
@@ -1610,39 +1623,40 @@
                 
                 if (!stationName || !trackNumber) return;
 
-                const track = configData.lines[lineCode].stations[stationName].tracks[trackNumber];
+                const track = configData.lines[lineCode].stations[stationName].Trk[trackNumber];
                 
                 // Update track information
-                track.lineMarker = track.lineMarker || {};
-                track.lineMarker.lineCode = document.getElementById('trackLineCode').value;
-                track.lineMarker.stationNumber = document.getElementById('trackStationNumber').value;
+                track.Marker = {
+                    LC: document.getElementById('trackLineCode').value,
+                    sNum: document.getElementById('trackStationNumber').value
+                };
 
                 // Update audio tracks
                 track.audio = {
                     melody: parseInt(document.getElementById('melodyTrack').value) || 1,
                     atos: parseInt(document.getElementById('atosTrack').value) || 1,
-                    doorChime: parseInt(document.getElementById('doorChimeTrack').value) || 1,
+                    dC: parseInt(document.getElementById('doorChimeTrack').value) || 1,
                     va: parseInt(document.getElementById('vaTrack').value) || 1
                 };
 
-                track.direction = {
-                    prev: {
-                        nameJa: document.getElementById('prevStationJa').value,
-                        nameEn: document.getElementById('prevStationEn').value
+                track.Dir = {
+                    p: {
+                        Ja: document.getElementById('prevStationJa').value,
+                        En: document.getElementById('prevStationEn').value
                     },
-                    next: {
-                        nameJa: document.getElementById('nextStationJa').value,
-                        nameEn: document.getElementById('nextStationEn').value
+                    n: {
+                        Ja: document.getElementById('nextStationJa').value,
+                        En: document.getElementById('nextStationEn').value
                     }
                 };
 
                 const station = configData.lines[lineCode].stations[stationName];
-                station.stationInfo = {
-                    stationCode: document.getElementById('stationCode').value,
-                    nameJa: document.getElementById('stationNameJa').value,
-                    nameHiragana: document.getElementById('stationNameHiragana').value,
-                    nameKo: document.getElementById('stationNameKo').value,
-                    wardBox: document.getElementById('wardBox').value
+                station.sInfo = {
+                    sC: document.getElementById('stationCode').value,
+                    Ja: document.getElementById('stationNameJa').value,
+                    Hi: document.getElementById('stationNameHiragana').value,
+                    Ko: document.getElementById('stationNameKo').value,
+                    wB: document.getElementById('wardBox').value
                 };
 
                 updatePreview();
@@ -1654,6 +1668,8 @@
 
         function exportConfig() {
             const exportData = JSON.parse(JSON.stringify(configData));
+            
+            // No need to transform property names as they are already in the shortened format
             
             // Json minification function to save space
             const jsonStr = JSON.stringify(exportData, null, 1);
@@ -1681,8 +1697,10 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     try {
-                        configData = JSON.parse(e.target.result);
+                        const importedData = JSON.parse(e.target.result);
                         
+                        // No need to normalize property names as we're only using the new format
+                        configData = importedData;
                         document.getElementById('configFilename').value = file.name;
                         initializeEditor();
                         
@@ -1706,8 +1724,6 @@
                         alert('Error parsing JSON file: ' + error.message);
                         console.error('Full error:', error);
                         console.log('Attempted to parse:', e.target.result);
-                        console.log('Problem may be near position:', 22736);
-                        console.log('Debug context:', e.target.result.substring(22720, 22750));
                     }
                 };
                 reader.readAsText(file, 'UTF-8');
@@ -1724,7 +1740,7 @@
                 return;
             }
             
-            const track = configData.lines[lineCode]?.stations[stationName]?.tracks[trackNumber];
+            const track = configData.lines[lineCode]?.stations[stationName]?.Trk[trackNumber];
             if (!track) {
                 console.log('Track not found:', { lineCode, stationName, trackNumber });
                 return;
@@ -1734,24 +1750,29 @@
                 // Update track name edit field
                 document.getElementById('trackNameEdit').value = trackNumber;
 
-                document.getElementById('trackLineCode').value = track.lineMarker?.lineCode || '';
-                document.getElementById('trackStationNumber').value = track.lineMarker?.stationNumber || '';
+                // Use only new property names
+                const lineMarker = track.Marker;
+                document.getElementById('trackLineCode').value = lineMarker.LC || '';
+                document.getElementById('trackStationNumber').value = lineMarker.sNum || '';
 
                 // Update audio tracks
                 if (track.audio) {
-                    document.getElementById('melodyTrack').value = track.audio.melody || track.audio.melodyTrack || 1;
-                    document.getElementById('atosTrack').value = track.audio.atos || track.audio.atosTrack || 1;
-                    document.getElementById('doorChimeTrack').value = track.audio.doorChime || track.audio.doorChimeTrack || 1;
-                    document.getElementById('vaTrack').value = track.audio.va || track.audio.vaTrack || 1;
+                    document.getElementById('melodyTrack').value = track.audio.melody || 1;
+                    document.getElementById('atosTrack').value = track.audio.atos || 1;
+                    document.getElementById('doorChimeTrack').value = track.audio.dC || 1;
+                    document.getElementById('vaTrack').value = track.audio.va || 1;
                 }
 
                 // Update direction information
-                if (track.direction) {
-                    document.getElementById('prevStationJa').value = track.direction.prev?.nameJa || '';
-                    document.getElementById('prevStationEn').value = track.direction.prev?.nameEn || '';
-                    document.getElementById('nextStationJa').value = track.direction.next?.nameJa || '';
-                    document.getElementById('nextStationEn').value = track.direction.next?.nameEn || '';
-                }
+                // Use only new property names
+                const direction = track.Dir;
+                const prev = direction.p;
+                const next = direction.n;
+                
+                document.getElementById('prevStationJa').value = prev.Ja || '';
+                document.getElementById('prevStationEn').value = prev.En || '';
+                document.getElementById('nextStationJa').value = next.Ja || '';
+                document.getElementById('nextStationEn').value = next.En || '';
 
                 updatePreview();
             } catch (error) {
@@ -1765,16 +1786,16 @@
             if (!lineCode || !stationName) return;
 
             const station = configData.lines[lineCode].stations[stationName];
-            if (!station.tracks) {
-                station.tracks = {};
+            if (!station.Trk) {
+                station.Trk = {};
             }
 
             // Get all existing tracks
-            const trackKeys = Object.keys(station.tracks);
+            const trackKeys = Object.keys(station.Trk);
             const trackCount = trackKeys.length;
             
             // Get the last track's data (if any tracks exist)
-            const lastTrack = trackCount > 0 ? station.tracks[trackKeys[trackCount - 1]] : null;
+            const lastTrack = trackCount > 0 ? station.Trk[trackKeys[trackCount - 1]] : null;
             
             // Generate new track name (try to maintain naming pattern if possible)
             let newTrackName;
@@ -1794,26 +1815,26 @@
             }
             
             // Create new track with copied and swapped values
-            station.tracks[newTrackName] = {
-                lineMarker: {
-                    lineCode: lastTrack ? lastTrack.lineMarker?.lineCode : lineCode,
-                    stationNumber: lastTrack ? lastTrack.lineMarker?.stationNumber : "01"
+            station.Trk[newTrackName] = {
+                Marker: {
+                    LC: lastTrack ? lastTrack.Marker?.LC : lineCode,
+                    sNum: lastTrack ? lastTrack.Marker?.sNum : "01"
                 },
                 audio: {
                     melody: lastTrack ? lastTrack.audio?.melody : 1,
                     atos: lastTrack ? lastTrack.audio?.atos : 1,
-                    doorChime: lastTrack ? lastTrack.audio?.doorChime : 1,
+                    dC: lastTrack ? lastTrack.audio?.dC : 1,
                     va: lastTrack ? lastTrack.audio?.va : 1
                 },
-                direction: {
+                Dir: {
                     // Swap previous and next station information
-                    prev: {
-                        nameJa: lastTrack ? lastTrack.direction?.next?.nameJa : "",
-                        nameEn: lastTrack ? lastTrack.direction?.next?.nameEn : ""
+                    p: {
+                        Ja: lastTrack ? lastTrack.Dir?.n?.Ja : "",
+                        En: lastTrack ? lastTrack.Dir?.n?.En : ""
                     },
-                    next: {
-                        nameJa: lastTrack ? lastTrack.direction?.prev?.nameJa : "",
-                        nameEn: lastTrack ? lastTrack.direction?.prev?.nameEn : ""
+                    n: {
+                        Ja: lastTrack ? lastTrack.Dir?.p?.Ja : "",
+                        En: lastTrack ? lastTrack.Dir?.p?.En : ""
                     }
                 }
             };
@@ -1832,12 +1853,12 @@
             
             trackSelect.innerHTML = '';
             
-            if (!lineCode || !stationName || !configData.lines[lineCode]?.stations[stationName]?.tracks) {
+            if (!lineCode || !stationName || !configData.lines[lineCode]?.stations[stationName]?.Trk) {
                 trackSelect.innerHTML = '<option value="">No tracks available</option>';
                 return;
             }
             
-            const tracks = configData.lines[lineCode].stations[stationName].tracks;
+            const tracks = configData.lines[lineCode].stations[stationName].Trk;
             Object.keys(tracks).forEach(trackNumber => {
                 const option = document.createElement('option');
                 option.value = trackNumber;
@@ -1880,7 +1901,7 @@
             if (!lineCode || !stationName || !trackNumber) return;
             
             if (confirm(`Are you sure you want to delete track ${trackNumber}?`)) {
-                delete configData.lines[lineCode].stations[stationName].tracks[trackNumber];
+                delete configData.lines[lineCode].stations[stationName].Trk[trackNumber];
                 updateTrackSelect();
             }
         }
@@ -1923,11 +1944,11 @@
             
             try {
                 // Create copy of track data
-                const trackData = configData.lines[lineCode].stations[stationName].tracks[oldName];
+                const trackData = configData.lines[lineCode].stations[stationName].Trk[oldName];
                 // Delete old track entry
-                delete configData.lines[lineCode].stations[stationName].tracks[oldName];
+                delete configData.lines[lineCode].stations[stationName].Trk[oldName];
                 // Add track with new name
-                configData.lines[lineCode].stations[stationName].tracks[newName] = trackData;
+                configData.lines[lineCode].stations[stationName].Trk[newName] = trackData;
                 
                 // Update track select
                 updateTrackSelect();

@@ -48,8 +48,8 @@ int currentVA = 1;      //current va
 int MainButtonPin = BUTTON_PIN;  // Use the ESP32 GPIO definition we set earlier
 int MainButtonState = HIGH;  // Current state of the button
 int lastMainButtonState = HIGH;  // Previous state of the button
-int loopPlaying = false;  
-int DonePlaying = false;  
+int loopPlaying = false;
+int DonePlaying = false;
 int AtosLastPlayed = false;
 bool atosPlayed = false;
 bool shouldSaveConfig = false;
@@ -149,7 +149,7 @@ void saveDeviceState() {
     doc["station"] = currentStation.stationNameEn;
     doc["track"] = currentStation.trackKey;
     doc["playbackMode"] = playbackMode; // Add playback mode to saved state
-    
+
     File file = SPIFFS.open("/device_state.json", "w");
     if (file) {
         serializeJson(doc, file);
@@ -184,14 +184,14 @@ void loadDeviceState() {
             
             // Get the first track
             String firstTrack;
-            JsonObject tracks = stations[firstStation]["tracks"];
+            JsonObject tracks = stations[firstStation]["Trk"];
             for (JsonPair track : tracks) {
                 firstTrack = track.key().c_str();
                 break;
             }
             
             JsonObject stationData = stationConfig["lines"][firstLine]["stations"][firstStation];
-            JsonObject trackData = stationData["tracks"][firstTrack];
+            JsonObject trackData = stationData["Trk"][firstTrack];
             JsonObject style = stationConfig["lines"][firstLine]["style"];
             
             // Update currentStation with default values
@@ -221,7 +221,7 @@ void loadDeviceState() {
     // Try to parse the JSON with extra error handling
     StaticJsonDocument<512> doc;
     DeserializationError error = deserializeJson(doc, jsonStr);
-    
+
     if (error) {
         Serial.print("Failed to parse device state: ");
         Serial.println(error.c_str());
@@ -288,14 +288,14 @@ void loadDeviceState() {
             }
             
             // Check if track exists
-            if (!stationConfig["lines"][line]["stations"][station]["tracks"].containsKey(track)) {
+            if (!stationConfig["lines"][line]["stations"][station]["Trk"].containsKey(track)) {
                 Serial.println(F("Track not found in config, using defaults"));
                 return;
             }
             
             // Now we know all paths exist, we can safely access them
             JsonObject stationData = stationConfig["lines"][line]["stations"][station];
-            JsonObject trackData = stationData["tracks"][track];
+            JsonObject trackData = stationData["Trk"][track];
             JsonObject style = stationConfig["lines"][line]["style"];
             
             // Use updateCurrentStation function for consistency
@@ -315,21 +315,21 @@ void loadDeviceState() {
 // Add this helper function to avoid code duplication
 void updateCurrentStation(JsonObject stationData, JsonObject trackData, JsonObject style, 
                         const char* line, const char* station, const char* track) {
-    currentStation.lineCode = stationData["stationInfo"]["stationCode"].as<const char*>();
-    currentStation.stationCodeLine = trackData["lineMarker"]["lineCode"].as<const char*>();
-    currentStation.stationNumber = trackData["lineMarker"]["stationNumber"].as<const char*>();
+    currentStation.lineCode = stationData["sInfo"]["sC"].as<const char*>();
+    currentStation.stationCodeLine = trackData["Marker"]["LC"].as<const char*>();
+    currentStation.stationNumber = trackData["Marker"]["sNum"].as<const char*>();
     currentStation.lineMarkerBgColor = style["lineMarkerBgColor"].as<const char*>();
     currentStation.lineNumberBgColor = style["lineNumberBgColor"].as<const char*>();
     currentStation.directionBarBgColor = style["directionBarBgColor"].as<const char*>();
-    currentStation.stationNameJa = stationData["stationInfo"]["nameJa"].as<const char*>();
-    currentStation.stationNameHiragana = stationData["stationInfo"]["nameHiragana"].as<const char*>();
-    currentStation.stationNameKo = stationData["stationInfo"]["nameKo"].as<const char*>();
+    currentStation.stationNameJa = stationData["sInfo"]["Ja"].as<const char*>();
+    currentStation.stationNameHiragana = stationData["sInfo"]["Hi"].as<const char*>();
+    currentStation.stationNameKo = stationData["sInfo"]["Ko"].as<const char*>();
     currentStation.stationNameEn = station;
-    currentStation.prevStation = trackData["direction"]["prev"]["nameJa"].as<const char*>();
-    currentStation.prevStationEn = trackData["direction"]["prev"]["nameEn"].as<const char*>();
-    currentStation.nextStation = trackData["direction"]["next"]["nameJa"].as<const char*>();
-    currentStation.nextStationEn = trackData["direction"]["next"]["nameEn"].as<const char*>();
-    currentStation.wardBox = stationData["stationInfo"]["wardBox"].as<const char*>();
+    currentStation.prevStation = trackData["Dir"]["p"]["Ja"].as<const char*>();
+    currentStation.prevStationEn = trackData["Dir"]["p"]["En"].as<const char*>();
+    currentStation.nextStation = trackData["Dir"]["n"]["Ja"].as<const char*>();
+    currentStation.nextStationEn = trackData["Dir"]["n"]["En"].as<const char*>();
+    currentStation.wardBox = stationData["sInfo"]["wB"].as<const char*>();
     currentStation.trackKey = track;
 }
 
@@ -538,7 +538,7 @@ void handleRoot() {
                 "padding: 8px; text-align: center; z-index: 1000; }"
                 ".navbar h1 { font-size: 1.5rem; font-weight: 500; margin: 0; }"
                 
-                // Main container 
+                // Main container
                 ".container { max-width: 800px; margin: 80px auto 100px; padding: 20px; }"
                 
                 // Panel and controls - consolidated properties
@@ -547,10 +547,10 @@ void handleRoot() {
                 ".control-group { display: flex; align-items: center; margin-bottom: 12px; gap: 10px; }"
                 ".control-label { flex: 1; font-size: 0.95rem; color: #555; }"
                 
-                // Selectors 
+                // Selectors
                 "select { flex: 0 0 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 0.9rem; color: #333; }"
                 
-                // Toggle switch 
+                // Toggle switch
                 ".toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; }"
                 ".toggle-switch input { opacity: 0; width: 0; height: 0; }"
                 ".slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }"
@@ -558,11 +558,11 @@ void handleRoot() {
                 "input:checked + .slider { background-color: #2196F3; }"
                 "input:checked + .slider:before { transform: translateX(18px); }"
                 
-                // Volume slider 
+                // Volume slider
                 ".volume-slider { flex: 1; -webkit-appearance: none; height: 5px; border-radius: 5px; background: #ddd; outline: none; }"
                 ".volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #2196F3; cursor: pointer; }"
                 
-                // Buttons 
+                // Buttons
                 ".btn { background: #2196F3; color: white; border: none; padding: 10px 15px; border-radius: 6px; "
                 "cursor: pointer; font-size: 0.9rem; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }"
                 ".btn:hover { filter: brightness(1.1); }"
@@ -571,11 +571,11 @@ void handleRoot() {
                 ".btn-secondary { background: #757575; }"
                 ".btn-warning { background: #e84636; }"
                 
-                // Footer 
+                // Footer
                 ".footer { position: fixed; bottom: 0; left: 0; right: 0; background: #2c3e50; color: #fff; "
                 "text-align: center; padding: 1rem; font-size: 0.8rem; }"
                 
-                // Version info 
+                // Version info
                 ".version-info { text-align: center; color: #666; font-size: 0.8rem; margin-top: 20px; }"
                 
                 // Station sign - maintained position property for ward-label positioning
@@ -583,7 +583,7 @@ void handleRoot() {
                 "margin: 0 0 20px 0; padding: 15px 15px 0; position: relative; border-radius: 10px; "
                 "box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }"
                 
-                // Content container 
+                // Content container
                 ".station-content { position: relative; width: 100%; display: flex; justify-content: center; "
                 "max-width: 800px; margin: 0 auto; padding: 0 60px; }"
                 
@@ -968,7 +968,7 @@ void handleRoot() {
           "  const lines = Array.from(lsel.options).find(o => o.value === sel.line);"
           "  if (lines) lines.selected = true;"
           "  if (line) populateSelector('stationSelect', line.stations, sel.station);"
-          "  if (station) populateSelector('trackSelect', station.tracks, sel.track);"
+          "  if (station) populateSelector('trackSelect', station.Trk, sel.track);"
           "}"
 
           // Update station selector
@@ -991,10 +991,13 @@ void handleRoot() {
           "  const station = $('stationSelect').value;"
           "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
           "  if (line && station && cachedConfig?.lines[line]?.stations[station]) {"
-          "    populateSelector('trackSelect', cachedConfig.lines[line].stations[station].tracks);"
-          "    if ($('trackSelect').options.length > 1) {"
-          "      $('trackSelect').selectedIndex = 1;"
-          "      updateStationSign();"
+          "    const tracks = cachedConfig.lines[line].stations[station].Trk;"
+          "    if (tracks) {"
+          "      populateSelector('trackSelect', tracks);"
+          "      if ($('trackSelect').options.length > 1) {"
+          "        $('trackSelect').selectedIndex = 1;"
+          "        updateStationSign();"
+          "      }"
           "    }"
           "  }"
           "}"
@@ -1008,7 +1011,7 @@ void handleRoot() {
           "  const station = stationSelect.value;"
           "  const track = trackSelect.value;"
 
-          "  if (!line || !station || !track) return;"
+          "  if (!line || !station || !track || track === 'Select Track') return;"
 
           "  fetch(`/updateStationSign?line=${line}&station=${station}&track=${track}`)"
           "    .then(response => response.ok ? response : Promise.reject('Failed to update'))"
@@ -1016,24 +1019,10 @@ void handleRoot() {
           "      if (!cachedConfig) return;"
 
           "      const stationData = cachedConfig.lines[line].stations[station];"
-          "      const trackData = stationData.tracks[track];"
+          "      const trackData = stationData.Trk[track];"
           "      const style = cachedConfig.lines[line].style;"
 
-                // Text updates
-          "      document.querySelector('.station-name-ja').textContent = stationData.stationInfo.nameJa;"
-          "      document.querySelector('.station-name-hiragana').textContent = stationData.stationInfo.nameHiragana;"
-          "      document.querySelector('.station-name-ko').textContent = stationData.stationInfo.nameKo;"
-          "      document.querySelector('.station-name-en-left').textContent = trackData.direction.prev.nameEn;"
-          "      document.querySelector('.station-name-en-center').textContent = station;"
-          "      document.querySelector('.station-name-en-right').textContent = trackData.direction.next.nameEn;"
-          "      document.querySelector('.direction-left').textContent = trackData.direction.prev.nameJa;"
-          "      document.querySelector('.direction-right').textContent = trackData.direction.next.nameJa;"
-          "      document.querySelector('.line-code-akb').textContent = stationData.stationInfo.stationCode;"
-          "      document.querySelector('.line-code-jy').textContent = trackData.lineMarker.lineCode;"
-          "      document.querySelector('.line-number').textContent = trackData.lineMarker.stationNumber;"
-          "      document.querySelector('.ward-box').textContent = stationData.stationInfo.wardBox;"
-
-      // Background color updates
+          // Background color updates
           "      document.querySelector('.line-marker').style.backgroundColor = style.lineMarkerBgColor;"
           "      document.querySelector('.station-number-container').style.backgroundColor = style.lineNumberBgColor;"
           "      document.querySelector('.station-indicator').style.backgroundColor = style.lineNumberBgColor;"
@@ -1044,8 +1033,28 @@ void handleRoot() {
                 // Audio value updates
           "      document.getElementById('melody').value = trackData.audio.melody;"
           "      document.getElementById('atos').value = trackData.audio.atos;"
-          "      document.getElementById('doorchime').value = trackData.audio.doorChime;"
+          "      document.getElementById('doorchime').value = trackData.audio.dC;"
           "      document.getElementById('platform').value = trackData.audio.va;"
+
+                // Text updates
+          "      const stInfo = stationData.sInfo || {};"
+          "      const lineMarker = trackData.Marker || {};"
+          "      const direction = trackData.Dir || {};"
+          "      const prev = direction.p || {};"
+          "      const next = direction.n || {};"
+          
+          "      document.querySelector('.station-name-ja').textContent = stInfo.Ja || '';"
+          "      document.querySelector('.station-name-hiragana').textContent = stInfo.Hi || '';"
+          "      document.querySelector('.station-name-ko').textContent = stInfo.Ko || '';"
+          "      document.querySelector('.station-name-en-left').textContent = prev.En || '';"
+          "      document.querySelector('.station-name-en-center').textContent = station;"
+          "      document.querySelector('.station-name-en-right').textContent = next.En || '';"
+          "      document.querySelector('.direction-left').textContent = prev.Ja || '';"
+          "      document.querySelector('.direction-right').textContent = next.Ja || '';"
+          "      document.querySelector('.line-code-akb').textContent = stInfo.sC || '';"
+          "      document.querySelector('.line-code-jy').textContent = lineMarker.LC || '';"
+          "      document.querySelector('.line-number').textContent = lineMarker.sNum || '';"
+          "      document.querySelector('.ward-box').textContent = stInfo.wB || '';"
 
                 // Update config values
           "      updateConfig();"
@@ -1072,7 +1081,8 @@ void handleRoot() {
 "          populateSelector('stationSelect', cachedConfig.lines[data.line].stations, data.station);"
 "        }"
 "        $('stationSelect').value = data.station;"
-"        populateSelector('trackSelect', cachedConfig.lines[data.line].stations[data.station].tracks, data.track);"
+"        const tracks = cachedConfig.lines[data.line].stations[data.station].Trk;"
+"        populateSelector('trackSelect', tracks, data.track);"
 "        $('trackSelect').value = data.track;"
 "        updateStationSign();" // Update the display
 "      }"
@@ -1273,8 +1283,8 @@ void DoorChime() {
       bool signal = true;
       xQueueSend(sequenceQueue, &signal, 0);
     }
+    }
   }
-}
 
 
 
@@ -1536,7 +1546,7 @@ void setupWebServer() {
             }
             
             String firstTrack;
-            JsonObject tracks = stations[firstStation]["tracks"];
+            JsonObject tracks = stations[firstStation]["Trk"];
             for (JsonPair track : tracks) {
                 firstTrack = track.key().c_str();
                 break;
@@ -1544,7 +1554,7 @@ void setupWebServer() {
             
             // Update station sign with first available options
             JsonObject stationData = stationConfig["lines"][firstLine]["stations"][firstStation];
-            JsonObject trackData = stationData["tracks"][firstTrack];
+            JsonObject trackData = stationData["Trk"][firstTrack];
             JsonObject style = stationConfig["lines"][firstLine]["style"];
             
             updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());
@@ -1570,13 +1580,13 @@ void setupWebServer() {
     const String station = server.arg("station");
     const String track = server.arg("track");
     
-    if (line.isEmpty() || station.isEmpty() || track.isEmpty() || !configLoaded) {
+    if (line.isEmpty() || station.isEmpty() || track.isEmpty() || track == "Select Track" || !configLoaded) {
         server.send(400, "text/plain", "Invalid selection");
         return;
     }
 
     JsonObject stationData = stationConfig["lines"][line]["stations"][station];
-    JsonObject trackData = stationData["tracks"][track];
+    JsonObject trackData = stationData["Trk"][track];
     JsonObject style = stationConfig["lines"][line]["style"];
     
     if (!stationData || !trackData) {
@@ -1585,28 +1595,28 @@ void setupWebServer() {
     }
 
     // Update currentStation struct
-    currentStation.lineCode = stationData["stationInfo"]["stationCode"].as<const char*>();//set the line code to the station data 
-    currentStation.stationCodeLine = trackData["lineMarker"]["lineCode"].as<const char*>();//set the station code line to the track data
-    currentStation.stationNumber = trackData["lineMarker"]["stationNumber"].as<const char*>();//set the station number to the track data
-    currentStation.lineMarkerBgColor = style["lineMarkerBgColor"].as<const char*>();//set the line marker background color to the style
-    currentStation.lineNumberBgColor = style["lineNumberBgColor"].as<const char*>();//set the line number background color to the style
-    currentStation.directionBarBgColor = style["directionBarBgColor"].as<const char*>();//set the direction bar background color to the style
-    currentStation.stationNameJa = stationData["stationInfo"]["nameJa"].as<const char*>();//set the station name japanese to the station data
-    currentStation.stationNameHiragana = stationData["stationInfo"]["nameHiragana"].as<const char*>();//set the station name hiragana to the station data
-    currentStation.stationNameKo = stationData["stationInfo"]["nameKo"].as<const char*>();//set the station name korean to the station data
+    currentStation.lineCode = stationData["sInfo"]["sC"].as<const char*>();
+    currentStation.stationCodeLine = trackData["Marker"]["LC"].as<const char*>();
+    currentStation.stationNumber = trackData["Marker"]["sNum"].as<const char*>();
+    currentStation.lineMarkerBgColor = style["lineMarkerBgColor"].as<const char*>();
+    currentStation.lineNumberBgColor = style["lineNumberBgColor"].as<const char*>();
+    currentStation.directionBarBgColor = style["directionBarBgColor"].as<const char*>();
+    currentStation.stationNameJa = stationData["sInfo"]["Ja"].as<const char*>();
+    currentStation.stationNameHiragana = stationData["sInfo"]["Hi"].as<const char*>();
+    currentStation.stationNameKo = stationData["sInfo"]["Ko"].as<const char*>();
     currentStation.stationNameEn = station;
-    currentStation.prevStation = trackData["direction"]["prev"]["nameJa"].as<const char*>();
-    currentStation.prevStationEn = trackData["direction"]["prev"]["nameEn"].as<const char*>();
-    currentStation.nextStation = trackData["direction"]["next"]["nameJa"].as<const char*>();//set the next station to the track data
-    currentStation.nextStationEn = trackData["direction"]["next"]["nameEn"].as<const char*>();//set the next station english to the track data
-    currentStation.wardBox = stationData["stationInfo"]["wardBox"].as<const char*>();//set the ward box to the station data
-    currentStation.trackKey = track;//set the track key to the track
+    currentStation.prevStation = trackData["Dir"]["p"]["Ja"].as<const char*>();
+    currentStation.prevStationEn = trackData["Dir"]["p"]["En"].as<const char*>();
+    currentStation.nextStation = trackData["Dir"]["n"]["Ja"].as<const char*>();
+    currentStation.nextStationEn = trackData["Dir"]["n"]["En"].as<const char*>();
+    currentStation.wardBox = stationData["sInfo"]["wB"].as<const char*>();
+    currentStation.trackKey = track;
     
     // Update audio settings
-    currentMelody = trackData["audio"]["melody"];//set the melody to the track data
-    currentAtos = trackData["audio"]["atos"];//set the atos to the track data
-    currentDoorChime = trackData["audio"]["doorChime"];//set the door chime to the track data
-    currentVA = trackData["audio"]["va"];//set the va to the track data
+    currentMelody = trackData["audio"]["melody"];
+    currentAtos = trackData["audio"]["atos"];
+    currentDoorChime = trackData["audio"]["dC"];
+    currentVA = trackData["audio"]["va"];
     
     saveDeviceState();
     server.send(200, "text/plain", "Station sign updated");
@@ -1688,7 +1698,7 @@ void setupWebServer() {
       server.send(200, "application/json", "{\"changed\":false,\"counter\":" + String(stationChangeCounter) + "}");
     }
   });
-  
+
   server.begin();
   Serial.println(F("Web server started!"));
   
@@ -1868,7 +1878,7 @@ void handleFileUpload() {
       uploadError = "File too large, max size is 100KB";
       
       // Close and delete the partial file
-      if (fsUploadFile) {fsUploadFile.close();PIFFS.remove(tempFilename);}
+      if (fsUploadFile) {fsUploadFile.close();SPIFFS.remove(tempFilename);}
       // Send error response to frontend
       server.send(400, "application/json", "{\"error\":\"" + uploadError + "\"}");
       return;
@@ -2057,8 +2067,8 @@ void loadStationConfig() {
     file = SPIFFS.open("/station_config.json", "r");//open the default config file
     if (!file) {
       Serial.println("Failed to open default config");
-      return;
-    }
+    return;
+  }
 
     String defaultJsonStr = file.readString();//read the default config file
     file.close();
@@ -2071,7 +2081,7 @@ void loadStationConfig() {
 
     Serial.printf("Recovered from failed config file: %s\n", failedFilename.c_str());
     loadDeviceState();
-    configLoaded = true;
+  configLoaded = true;
     return;
   }
 
@@ -2086,32 +2096,32 @@ void loadStationConfig() {
 //===============================================================
 void selectFirstAvailableOptions() {
   String firstLine;
-  JsonObject lines = stationConfig["lines"];//get the lines
+  JsonObject lines = stationConfig["lines"];
   for (JsonPair line : lines) {
-    firstLine = line.key().c_str();//get the first line
+    firstLine = line.key().c_str();
     break;
   }
   
   String firstStation;
-  JsonObject stations = lines[firstLine]["stations"];//get the stations
+  JsonObject stations = lines[firstLine]["stations"];
   for (JsonPair station : stations) {
-    firstStation = station.key().c_str();//get the first station
+    firstStation = station.key().c_str();
     break;
   }
   
   String firstTrack;
-  JsonObject tracks = stations[firstStation]["tracks"];//get the tracks
+  JsonObject tracks = stations[firstStation]["Trk"];
   for (JsonPair track : tracks) {
-    firstTrack = track.key().c_str();//get the first track
+    firstTrack = track.key().c_str();
     break;
   }
   
   // Update station sign with first available options
-  JsonObject stationData = stationConfig["lines"][firstLine]["stations"][firstStation];//get the station data
-  JsonObject trackData = stationData["tracks"][firstTrack];//get the track data
-  JsonObject style = stationConfig["lines"][firstLine]["style"];//get the style
+  JsonObject stationData = stationConfig["lines"][firstLine]["stations"][firstStation];
+  JsonObject trackData = stationData["Trk"][firstTrack];
+  JsonObject style = stationConfig["lines"][firstLine]["style"];
   
-  updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());//update the current station
+  updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());
   saveDeviceState();  // Save this as the current state
 }
 
@@ -2120,7 +2130,7 @@ void selectFirstAvailableOptions() {
 //===============================================================
 void createDefaultConfig() {
   Serial.println("Creating Default Station Config Json");
-  const char* defaultConfig = R"({"lines":{"JY":{"style":{"lineMarkerBgColor":"#000000","lineNumberBgColor":"#80c241","directionBarBgColor":"#006400"},"stations":{"Akihabara":{"stationInfo":{"stationCode":"AKB","nameJa":"秋葉原","nameHiragana":"あきはばら","nameKo":"아키하바라","wardBox":"山"},"tracks":{"track1":{"lineMarker":{"lineCode":"JY","stationNumber":"03"},"audio":{"melody":1,"atos":2,"doorChime":1,"va":1},"direction":{"prev":{"nameJa":"神田","nameEn":"Kanda"},"next":{"nameJa":"御徒町","nameEn":"Okachimachi"}}}}}}}}})";
+  const char* defaultConfig = R"({"lines":{"JY":{"style":{"lineMarkerBgColor":"#000000","lineNumberBgColor":"#80c241","directionBarBgColor":"#006400"},"stations":{"Akihabara":{"sInfo":{"sC":"AKB","Ja":"秋葉原","Hi":"あきはばら","Ko":"아키하바라","wB":"山"},"Trk":{"track1":{"Marker":{"LC":"JY","sNum":"03"},"audio":{"melody":1,"atos":2,"dC":1,"va":1},"Dir":{"p":{"Ja":"神田","En":"Kanda"},"n":{"Ja":"御徒町","En":"Okachimachi"}}}}}}}}})";
 
   File file = SPIFFS.open("/station_config.json", "w");
   if (!file) {
@@ -2184,7 +2194,7 @@ void handleSequencePlay() {
         String nextStation = stationKeys[nextIndex];        // Get next station data
 
         JsonObject stationData = stations[nextStation];     // Find first track for this station
-        JsonObject tracks = stationData["tracks"];
+        JsonObject tracks = stationData["Trk"];
         String firstTrack;
         
         for (JsonPair track : tracks) {
@@ -2214,7 +2224,7 @@ void updateStationForSequence(const char* line, const char* station, const char*
     Serial.printf("Updating station for sequence: %s - %s - %s\n", line, station, track);
     
     JsonObject stationData = stationConfig["lines"][line]["stations"][station];
-    JsonObject trackData = stationData["tracks"][track];
+    JsonObject trackData = stationData["Trk"][track];
     JsonObject style = stationConfig["lines"][line]["style"];
     
     // Update currentStation with all values
@@ -2223,7 +2233,7 @@ void updateStationForSequence(const char* line, const char* station, const char*
     // Update audio settings
     currentMelody = trackData["audio"]["melody"];
     currentAtos = trackData["audio"]["atos"];
-    currentDoorChime = trackData["audio"]["doorChime"];
+    currentDoorChime = trackData["audio"]["dC"];
     currentVA = trackData["audio"]["va"];
     
     saveDeviceState();
