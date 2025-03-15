@@ -97,6 +97,7 @@ String playbackMode = "selected"; // Options: "selected", "random", "sequence"
 int sequenceCurrentIndex = 0; // For tracking current position in sequence
 String sequenceLine = ""; // Current line for sequence play
 uint32_t stationChangeCounter = 0; // Counter for tracking station changes
+bool sequenceInProgress = false; // Flag to prevent multiple sequence triggers
 
 // Add this structure to hold system health data
 struct SystemHealth {
@@ -452,7 +453,8 @@ void setup()
   loadStationConfig();
   loadDeviceState();  // This will now have both config and state available
 
-  PlayRandomAudio(MelodyFolder,MelodyCount);
+  myDFPlayer.disableLoop();PlayRandomAudio(MelodyFolder,MelodyCount);
+  
 
   // Create button handler task on Core 0
   xTaskCreatePinnedToCore(
@@ -490,11 +492,11 @@ void setup()
   // Create a queue for sequence operations
   sequenceQueue = xQueueCreate(1, sizeof(bool));
 
-  // Create a task for sequence handling with larger stack
+  // Create a task for sequence handling 
   xTaskCreatePinnedToCore(
     sequenceHandlerTask,
     "sequenceHandler",
-    8192,  // Double the normal stack size
+    8192,  // stack size
     NULL,
     1,
     NULL,
@@ -638,11 +640,11 @@ void handleRoot() {
                 
                 // Station info - consolidated text alignments
                 ".station-info { position: relative; display: flex; flex-direction: column; align-items: center; width: auto; min-width: 200px; margin: 0 auto; }"
-                ".station-name-ja, .station-name-hiragana, .station-name-ko { text-align: center; }"
-                ".station-name-ja { position: relative; display: inline-block; font-size: 42px; font-weight: bold; "
+                ".staName-ja, .staName-hiragana, .staName-ko { text-align: center; }"
+                ".staName-ja { position: relative; display: inline-block; font-size: 42px; font-weight: bold; "
                 "line-height: 1.2; font-family: 'MS Gothic', 'Yu Gothic', sans-serif; white-space: nowrap; }"
-                ".station-name-hiragana { font-size: 16px; color: #333;font-weight: bold; }"
-                ".station-name-ko { font-size: 14px; color: #666; margin-bottom: 6px; }"
+                ".staName-hiragana { font-size: 16px; color: #333;font-weight: bold; }"
+                ".staName-ko { font-size: 14px; color: #666; margin-bottom: 6px; }"
                 
                 // Ward label - critical for positioning, kept exactly as is
                 ".ward-label { position: absolute; top: 15px; right: 50px; display: flex; gap: 1px; }"
@@ -670,11 +672,11 @@ void handleRoot() {
                 ".direction-station { font-size: 16px; font-weight: bold; }"
                 
                 // English station names - consolidated styles
-                ".station-name-en { font-size: 16px; color: #333; }"
-                ".station-name-en.current { font-weight: bold; }"
-                ".station-name-en-left { width: 33%; text-align: left; }"
-                ".station-name-en-center { width: 33%; text-align: center; }"
-                ".station-name-en-right { width: 33%; text-align: right; }"
+                ".staName-en { font-size: 16px; color: #333; }"
+                ".staName-en.current { font-weight: bold; }"
+                ".staName-en-left { width: 33%; text-align: left; }"
+                ".staName-en-center { width: 33%; text-align: center; }"
+                ".staName-en-right { width: 33%; text-align: right; }"
                 ".station-names-container { display: flex; justify-content: space-between; padding: 5px 15px; }"
                 
                 // Direction bar and names container - kept as is
@@ -730,9 +732,9 @@ void handleRoot() {
           "</div>"
           "</div>"
           "<div class='station-info'>"
-          "<div class='station-name-ja'>" + currentStation.stationNameJa + "</div>"
-          "<div class='station-name-hiragana'>" + currentStation.stationNameHiragana + "</div>"
-          "<div class='station-name-ko'>" + currentStation.stationNameKo + "</div>"
+          "<div class='staName-ja'>" + currentStation.stationNameJa + "</div>"
+          "<div class='staName-hiragana'>" + currentStation.stationNameHiragana + "</div>"
+          "<div class='staName-ko'>" + currentStation.stationNameKo + "</div>"
           "</div>"
           "</div>"
           "<div class='ward-label'>"
@@ -749,9 +751,9 @@ void handleRoot() {
           "</div>"
           "</div>"
           "<div class='station-names-container'>"
-          "<span class='station-name-en station-name-en-left'>" + currentStation.prevStationEn + "</span>"
-          "<span class='station-name-en station-name-en-center current'>" + currentStation.stationNameEn + "</span>"
-          "<span class='station-name-en station-name-en-right'>" + currentStation.nextStationEn + "</span>"
+          "<span class='staName-en staName-en-left'>" + currentStation.prevStationEn + "</span>"
+          "<span class='staName-en staName-en-center current'>" + currentStation.stationNameEn + "</span>"
+          "<span class='staName-en staName-en-right'>" + currentStation.nextStationEn + "</span>"
           "</div>";
 
   // Add the Sequence Control panel first
@@ -886,7 +888,7 @@ void handleRoot() {
 
           // Line marker position
           "function updateLineMarkerPosition() {"
-          "  const stationNameJa = document.querySelector('.station-name-ja');"
+          "  const stationNameJa = document.querySelector('.staName-ja');"
           "  const lineMarker = document.querySelector('.line-marker');"
           "  const stationContent = document.querySelector('.station-content');"
           "  const stationCode = document.querySelector('.line-code-akb');"
@@ -1075,12 +1077,12 @@ void handleRoot() {
           "      const prev = direction.p || {};"
           "      const next = direction.n || {};"
           
-          "      document.querySelector('.station-name-ja').textContent = stInfo.Ja || '';"
-          "      document.querySelector('.station-name-hiragana').textContent = stInfo.Hi || '';"
-          "      document.querySelector('.station-name-ko').textContent = stInfo.Ko || '';"
-          "      document.querySelector('.station-name-en-left').textContent = prev.En || '';"
-          "      document.querySelector('.station-name-en-center').textContent = station;"
-          "      document.querySelector('.station-name-en-right').textContent = next.En || '';"
+          "      document.querySelector('.staName-ja').textContent = stInfo.Ja || '';"
+          "      document.querySelector('.staName-hiragana').textContent = stInfo.Hi || '';"
+          "      document.querySelector('.staName-ko').textContent = stInfo.Ko || '';"
+          "      document.querySelector('.staName-en-left').textContent = prev.En || '';"
+          "      document.querySelector('.staName-en-center').textContent = station;"
+          "      document.querySelector('.staName-en-right').textContent = next.En || '';"
           "      document.querySelector('.direction-left').textContent = prev.Ja || '';"
           "      document.querySelector('.direction-right').textContent = next.Ja || '';"
           "      document.querySelector('.line-code-akb').textContent = stInfo.sC || '';"
@@ -1158,7 +1160,7 @@ String populateOptions(const char* folderName, int count, int selectedOption) {
 //===============================================================
 
 void UpdateFileCount() {
-   Serial.println(F("=====Audio File Count:====="));
+   Serial.println(F("\n=====Audio File Count:====="));
 
    MelodyCount = CheckFileInFolder(MelodyFolder);
     Serial.printf("Melody Files: %d\n", MelodyCount);
@@ -1217,12 +1219,22 @@ int generateRandomNumber(int min, int max) {
 
 
 int CheckFileInFolder(int folder) {
-  int fileCount;
-  do {
+  int fileCount = 0;
+  int retryCount = 0;
+  const int MAX_RETRIES = 3;
+  
+  // Try up to MAX_RETRIES times to get a valid file count
+  while (retryCount < MAX_RETRIES) {
     fileCount = myDFPlayer.readFileCountsInFolder(folder);
-    fileCount = myDFPlayer.readFileCountsInFolder(folder); //bug fix! run it twice to get the correct value
-  } while (fileCount == -1);
-  return fileCount;
+    fileCount = myDFPlayer.readFileCountsInFolder(folder);//bug fix! do not remove run twice to get the correct value
+    if (fileCount > 0) {
+      break; // Valid count received
+    }
+    retryCount++;
+    delay(10); // Short delay between retries
+  }
+  
+  return (fileCount > 0) ? fileCount : 0; // Return 0 if no valid count
 }
 
 
@@ -1243,16 +1255,16 @@ void handleButton() {
       MainButtonState = reading;
 
         if (MainButtonState == LOW) {
-          Serial.println(F("==Button Pressed=="));
+          Serial.println(F("\n==Button Pressed=="));
             if (!loopPlaying) {
                handlePlayMelody();
                 myDFPlayer.enableLoop(); // Call only once
                 loopPlaying = true;
                 AtosLastPlayed = false;
-                notifyUIofStationChange();
+                //notifyUIofStationChange();
             }
         } else if (loopPlaying) {
-          Serial.println(F("==Button Released=="));
+          Serial.println(F("\n==Button Released=="));
             //myDFPlayer.stop();
             myDFPlayer.disableLoop();
             loopPlaying = false;
@@ -1294,36 +1306,55 @@ void handlePlayMelody() { playAudio(MelodyFolder, currentMelody, MelodyCount); }
 void handlePlayAtos() { playAudio(AtosFolder, currentAtos, AtosCount); }
 void handlePlayVA() { playAudio(VAFolder, currentVA, VACount); }
 
-// Check if Atos has finished playing
+/**
+ * Handle door chime playback and sequence triggering
+ * Called regularly from the main loop
+ */
 void DoorChime() {
-  // Restore original condition and behavior
-  if (DonePlaying == true && AtosLastPlayed == true) {
-    Serial.println("====Door Chime playing====");
-    
-    // Set the flags before playing the audio
-    DonePlaying = false;
-    AtosLastPlayed = false;
-    
-    // Play the door chime
-    PlayCurrentAudio(DoorChimeFolder, currentDoorChime);
-    
-    // Check if we're in sequence mode to advance to next station
-    if (playbackMode == "sequence") {
-      Serial.println("## Sequence mode active ##");
-      
-      // Use the queue to schedule the advancement in the separate task
-      bool signal = true;
-      xQueueSend(sequenceQueue, &signal, 0);
-    }
-    }
+  // Only proceed if both flags are set
+  if (!DonePlaying || !AtosLastPlayed) {
+    return;
   }
+  
+  Serial.println(F("\n====Door Chime playing===="));
+  
+  // Reset flags before playing audio
+  DonePlaying = false;
+  AtosLastPlayed = false;
+  
+  // Play the door chime
+  PlayCurrentAudio(DoorChimeFolder, currentDoorChime);
+  
+  // Check if we're in sequence mode to advance to next station
+  if (playbackMode == "sequence" && !sequenceInProgress) {
+    triggerSequencePlay();
+  }
+}
 
-
-
-
+/**
+ * Trigger sequence play via the queue
+ */
+void triggerSequencePlay() {
+  Serial.println(F("## Sequence mode active ##"));
+  
+  // Set the sequence in progress flag to prevent multiple triggers
+  sequenceInProgress = true;
+  
+  // Use the queue to schedule the advancement in the separate task
+  bool signal = true;
+  if (xQueueSend(sequenceQueue, &signal, 0) != pdTRUE) {
+    Serial.println(F("Error: Failed to send sequence signal to queue"));
+    sequenceInProgress = false;
+  }
+}
 
 //================================MP3-Player-Sleep=============================
-void DFPSleep(){if (DonePlaying == true){myDFPlayer.sleep();Serial.println(F("==MP3 Board going to sleep=="));}}
+void DFPSleep() {
+  if (DonePlaying) {
+    myDFPlayer.sleep();
+    Serial.println(F("==MP3 Board going to sleep=="));
+  }
+}
 
 //===============================================================
 // DFPlayer Status Check
@@ -1362,12 +1393,14 @@ void printDetail(uint8_t type, int value){
       Serial.print(value);
       Serial.println(F(" Play Finished!"));
       DonePlaying = true;
-      
-      if (playbackMode == "sequence" && value == currentAtos) {
+
+      //old code, new code is in handleSequencePlay()
+    /* if (playbackMode == "sequence" && value == currentAtos) {
         // Only advance to next station if the ATOS announcement finished
         Serial.println(F("Sequence mode: Advancing to next station"));
         handleSequencePlay();
       }
+      */
       break;
     case DFPlayerError:
       Serial.print(F("DFPlayerError:"));
@@ -1412,7 +1445,7 @@ void setupWebServerTask() {
     xTaskCreatePinnedToCore(
         webServerTask,
         "serverLoop",
-        29000,
+        30000,
         NULL,
         1,
         NULL,
@@ -1687,10 +1720,13 @@ void setupWebServer() {
     String mode = server.arg("mode");
     if (!mode.isEmpty()) {
       // Add detailed logging
-      Serial.printf("\n===== PLAYBACK MODE CHANGE ======\n");
-      Serial.printf("Previous mode: %s\n", playbackMode.c_str());
-      Serial.printf("Current mode: %s\n", mode.c_str());
-      Serial.println("================================");
+      Serial.printf_P(PSTR("\n===== PLAYBACK MODE CHANGE ======\n"));
+      Serial.printf_P(PSTR("Previous mode: %s\n"), playbackMode.c_str());
+      Serial.printf_P(PSTR("Current mode: %s\n"), mode.c_str());
+      Serial.println(F("================================"));
+      
+      // Reset sequence flag when changing modes
+      sequenceInProgress = false;
       
       playbackMode = mode;
       saveDeviceState(); // Save it persistently
@@ -1874,7 +1910,7 @@ void handleFileUpload() {
     totalBytes = 0;//set the total bytes to 0
     uploadError = ""; // Clear previous errors
     String filename = upload.filename;//get the filename
-    Serial.println(F("==========Config Upload Utility=========="));
+    Serial.println(F("\n==========Config Upload Utility=========="));
     Serial.printf_P(PSTR("Upload Start: %s\n"), filename.c_str());
     
     // Simply check if this is a JSON file - assume all JSON uploads are config files
@@ -2018,7 +2054,7 @@ void handleFileUpload() {
 // Load Station Config Json
 //===============================================================
 void loadStationConfig() {
-  Serial.println(F("===== Loading Station Config Json====="));
+  Serial.println(F("\n===== Loading Station Config Json====="));
   if (!SPIFFS.exists("/station_config.json")) {
     Serial.println(F("Config file not found, creating default Station config"));
     createDefaultConfig();
@@ -2198,50 +2234,88 @@ void loadConfigFilename() {
 // Sequence Play Function
 //===============================================================
 void handleSequencePlay() {
-    sequenceLine = currentStation.stationCodeLine; // Always use the current line from currentStation
+    // Use the current line from currentStation
+    sequenceLine = currentStation.stationCodeLine;
+    
     // Get all stations in the current line
     JsonObject line = stationConfig["lines"][sequenceLine];
-    if (!line.isNull()) {
-        JsonObject stations = line["stations"];
-        
-        // Get array of station keys for sequencing
-        int stationCount = 0;
-        String stationKeys[80]; // Assuming max 80 stations per line
-        
-        for (JsonPair station : stations) {
-            stationKeys[stationCount++] = String(station.key().c_str());
-        }
-        // Find current station index or start from 0
-        int currentIndex = 0;
-        for (int i = 0; i < stationCount; i++) {
-            if (stationKeys[i] == currentStation.stationNameEn) {
-                currentIndex = i;
-                break;
-            }
-        }
-
-        int nextIndex = (currentIndex + 1) % stationCount;  // Get next station index (wrap around if at end)
-        String nextStation = stationKeys[nextIndex];        // Get next station data
-
-        JsonObject stationData = stations[nextStation];     // Find first track for this station
-        JsonObject tracks = stationData["Trk"];
-        String firstTrack;
-        
-        for (JsonPair track : tracks) {
-            firstTrack = String(track.key().c_str());
+    if (line.isNull()) {
+        Serial.println(F("Error: Invalid line for sequence play"));
+        sequenceInProgress = false;
+        return;
+    }
+    
+    JsonObject stations = line["stations"];
+    if (stations.isNull() || stations.size() == 0) {
+        Serial.println(F("Error: No stations found for sequence play"));
+        sequenceInProgress = false;
+        return;
+    }
+    
+    // Get array of station keys for sequencing
+    int stationCount = 0;
+    String stationKeys[80]; // Assuming max 80 stations per line
+    
+    for (JsonPair station : stations) {
+        stationKeys[stationCount++] = String(station.key().c_str());
+    }
+    
+    if (stationCount == 0) {
+        Serial.println(F("Error: No stations found in line"));
+        sequenceInProgress = false;
+        return;
+    }
+    
+    // Find current station index or start from 0
+    int currentIndex = 0;
+    for (int i = 0; i < stationCount; i++) {
+        if (stationKeys[i] == currentStation.stationNameEn) {
+            currentIndex = i;
             break;
         }
-        
-        // Update station sign to the next station
-        if (!nextStation.isEmpty() && !firstTrack.isEmpty()) {
-            updateStationForSequence(sequenceLine.c_str(), nextStation.c_str(), firstTrack.c_str());
-        }
+    }
+    
+    // Get next station index (wrap around if at end)
+    int nextIndex = (currentIndex + 1) % stationCount;
+    String nextStation = stationKeys[nextIndex];
+    
+    // Find first track for this station
+    JsonObject stationData = stations[nextStation];
+    if (stationData.isNull()) {
+        Serial.println(F("Error: Invalid station data"));
+        sequenceInProgress = false;
+        return;
+    }
+    
+    JsonObject tracks = stationData["Trk"];
+    if (tracks.isNull() || tracks.size() == 0) {
+        Serial.println(F("Error: No tracks found for station"));
+        sequenceInProgress = false;
+        return;
+    }
+    
+    // Get the first track
+    String firstTrack;
+    for (JsonPair track : tracks) {
+        firstTrack = String(track.key().c_str());
+        break;
+    }
+    
+    // Update station sign to the next station
+    if (!nextStation.isEmpty() && !firstTrack.isEmpty()) {
+        updateStationForSequence(sequenceLine.c_str(), nextStation.c_str(), firstTrack.c_str());
         
         // Play the current audio for the new station
         PlayCurrentAudio(VAFolder, currentVA);
         
         // Store current sequence position
         sequenceCurrentIndex = nextIndex;
+        
+        Serial.printf_P(PSTR("Sequence advanced to station %s (%d/%d)\n"), 
+                      nextStation.c_str(), nextIndex + 1, stationCount);
+    } else {
+        Serial.println(F("Error: Invalid station or track for sequence"));
+        sequenceInProgress = false;
     }
 }
 
@@ -2249,30 +2323,52 @@ void handleSequencePlay() {
 // Update Station For Sequence Play
 //===============================================================
 void updateStationForSequence(const char* line, const char* station, const char* track) {
-    if (!configLoaded) return;
+    if (!configLoaded) {
+        Serial.println(F("Error: Config not loaded"));
+        return;
+    }
     
     Serial.printf_P(PSTR("Updating station for sequence: %s - %s - %s\n"), line, station, track);
     
-    JsonObject stationData = stationConfig["lines"][line]["stations"][station];
+    // Get the required objects from the config
+    JsonObject lineObj = stationConfig["lines"][line];
+    if (lineObj.isNull()) {
+        Serial.println(F("Error: Line not found in config"));
+        return;
+    }
+    
+    JsonObject stationData = lineObj["stations"][station];
+    if (stationData.isNull()) {
+        Serial.println(F("Error: Station not found in config"));
+        return;
+    }
+    
     JsonObject trackData = stationData["Trk"][track];
-    JsonObject style = stationConfig["lines"][line]["style"];
+    if (trackData.isNull()) {
+        Serial.println(F("Error: Track not found in config"));
+        return;
+    }
+    
+    JsonObject style = lineObj["style"];
+    if (style.isNull()) {
+        Serial.println(F("Error: Style not found in config"));
+        return;
+    }
     
     // Update currentStation with all values
     updateCurrentStation(stationData, trackData, style, line, station, track);
     
-    // Update audio settings
-    currentMelody = trackData["audio"]["melody"];
-    currentAtos = trackData["audio"]["atos"];
-    currentDoorChime = trackData["audio"]["dC"];
-    currentVA = trackData["audio"]["va"];
+    // Update audio settings with safe defaults if missing
+    currentMelody = trackData["audio"].containsKey("melody") ? trackData["audio"]["melody"].as<int>() : 1;
+    currentAtos = trackData["audio"].containsKey("atos") ? trackData["audio"]["atos"].as<int>() : 1;
+    currentDoorChime = trackData["audio"].containsKey("dC") ? trackData["audio"]["dC"].as<int>() : 1;
+    currentVA = trackData["audio"].containsKey("va") ? trackData["audio"]["va"].as<int>() : 1;
     
+    // Save state and notify UI
     saveDeviceState();
-    
-    // Signal UI to update
     notifyUIofStationChange();
     
     Serial.println(F("Station updated for sequence, UI notification sent"));
-    Serial.println(F("===================================================="));
 }
 
 //===============================================================
@@ -2307,12 +2403,25 @@ void sequenceHandlerTask(void * parameter) {
     // Wait for signal from the queue
     if (xQueueReceive(sequenceQueue, &signal, portMAX_DELAY) == pdTRUE) {
       if (signal) {
-        Serial.println("==================Sequence Handler==================");
-        // Now it's safe to call the sequence handling function
+        Serial.println(F("==================Sequence Handler=================="));
+        
+        // Add a small delay to ensure audio has finished processing
+        delay(100);
+        
+        // Process the sequence
         handleSequencePlay();
+        
+        // Reset the sequence in progress flag after a delay
+        // This prevents multiple triggers in quick succession
+        delay(500);
+        sequenceInProgress = false;
+        
+        Serial.println(F("==================Sequence Complete================="));
       }
     }
-    delay(10); // Small delay
+    
+    // Small delay to prevent watchdog issues
+    delay(10);
   }
 }
 
@@ -2341,8 +2450,6 @@ void processCommand() {
         Serial.print(PROMPT);
         return;
     }
-    
-    Serial.println("Command: " + serialCommand);
     
     // Convert command to lowercase for case-insensitive comparison
     String cmd = serialCommand;
