@@ -23,7 +23,7 @@ void printDetail(uint8_t type, int value);
 //================================
 // Global Configuration Constants
 //================================
-#define FW_VERSION      "ESP32-MCU-R0.4.9 WebUI-R3.2.5"  // Current firmware version
+#define FW_VERSION      "ESP32-MCU-R0.4.10 WebUI-R3.2.5"  // Current firmware version
 
 // Audio folder mappings on SD card
 int MelodyFolder = 1;    // /01/ - Contains departure melodies
@@ -161,7 +161,7 @@ void loadDeviceState() {
     Serial.println(F("\n=== Loading Device State ==="));
     
     if (!SPIFFS.exists("/device_state.json")) {
-        Serial.println("No saved state found");
+        Serial.println(F("No saved state found"));
         // Set default playback mode
         playbackMode = "selected";
         // If no saved state but we have config, set defaults from first available options
@@ -203,7 +203,7 @@ void loadDeviceState() {
     // Try to open the file
     File file = SPIFFS.open("/device_state.json", "r");
     if (!file) {
-        Serial.println("Failed to open device state file");
+        Serial.println(F("Failed to open device state file"));
         playbackMode = "selected"; // Default value
         return;
     }
@@ -213,7 +213,7 @@ void loadDeviceState() {
     file.close();
     
     if (jsonStr.length() == 0) {
-        Serial.println("Empty device state file");
+        Serial.println(F("Empty device state file"));
         playbackMode = "selected";
         return;
     }
@@ -404,8 +404,13 @@ void setupOTA() {
 }
 //==================================================================================
 
-// 1. First, let's create a queue to handle sequence operations more safely
+// Sequence Queue for safe sequence operations
 QueueHandle_t sequenceQueue;
+
+// Serial shell variables
+const char* PROMPT = "JR-Beru:_$ ";
+String serialCommand = "";
+bool commandComplete = false;
 
 void setup()
 {
@@ -415,14 +420,14 @@ void setup()
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   delay(600);
 
-  Serial.println(F(""));
-  Serial.println(F("==================="));
+  Serial.println(F("\n"));
+  Serial.println(F("\n==================="));
   Serial.println(F(" JR-Beru Booting "));
   Serial.println(F("==================="));
   Serial.println(F("Firmware Version: " FW_VERSION));
 
-  // Initialize MP3 player first
-  Serial.println(F("Initializing MP3-Player ... (May take 3~5 seconds)"));
+  // Initialize MP3 player
+  Serial.println(F("\nInitializing MP3-Player ... (May take 3~5 seconds)"));
   if (!myDFPlayer.begin(FPSerial, /*isACK = */true, /*doReset = */false)) {
     Serial.println(F("Unable to begin:"));
     Serial.println(F("1.Please recheck the connection!"));
@@ -438,7 +443,7 @@ void setup()
 
     // Initialize SPIFFS first
   if(!SPIFFS.begin(true)) {
-    Serial.println("SPIFFS Mount Failed");
+    Serial.println(F("SPIFFS Mount Failed"));
     return;
   }
 
@@ -495,6 +500,11 @@ void setup()
     NULL,
     CONFIG_ASYNC_TCP_RUNNING_CORE
   );
+
+  // Initialize serial shell
+  Serial.println(F("\nWelcome to JR-Beru Shell. Type 'help' for available commands."));
+   Serial.println(F("Firmware Version: " FW_VERSION));Serial.println("");
+  Serial.print(PROMPT);
 }
 
 
@@ -505,22 +515,44 @@ void setup()
 
 void loop()
 {
+  // Handle serial input for the shell
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    
+    // Echo the character back to the terminal
+    Serial.print(inChar);
+    
+    // If newline or carriage return, command is complete
+    if (inChar == '\n' || inChar == '\r') {
+      Serial.println(); // Force a new line
+      commandComplete = true;
+    } else {
+      // Add character to command string
+      serialCommand += inChar;
+    }
+  }
+  
+  // Process command if complete
+  if (commandComplete) {
+    processCommand();
+    serialCommand = ""; // Clear the command buffer
+    commandComplete = false;
+  }
+
   // Only handle web-related tasks if WiFi is connected
   if (WiFi.status() == WL_CONNECTED) {
     ElegantOTA.loop();
-
     checkWiFiConnection();
+  }
   
-    
-    /* for debug use only 
-    // Check system health periodically
-    if (millis() - lastHealthCheck > 5000) {  // Check every 30 seconds
-        checkSysHealth();
-        lastHealthCheck = millis();
-    }*/
-            
-  }
-  }
+  // Handle button input and other tasks
+  handleButton();
+  CheckDFPStatus();
+  DoorChime();
+  
+  // Small delay to prevent watchdog issues
+  delay(1);
+}
 
 //===============================================================
 //  HTML Page
@@ -1418,7 +1450,7 @@ void setupWebServer() {
       mode = playbackMode;
     }
     
-    Serial.printf("Playing platform announcement with mode: %s\n", mode.c_str());
+    Serial.printf_P(PSTR("Playing platform announcement with mode: %s\n"), mode.c_str());
     
     if (mode == "random") {
       // Random play logic
@@ -1842,8 +1874,8 @@ void handleFileUpload() {
     totalBytes = 0;//set the total bytes to 0
     uploadError = ""; // Clear previous errors
     String filename = upload.filename;//get the filename
-    Serial.println("==========Config Upload Utility==========");
-    Serial.printf("Upload Start: %s\n", filename.c_str());
+    Serial.println(F("==========Config Upload Utility=========="));
+    Serial.printf_P(PSTR("Upload Start: %s\n"), filename.c_str());
     
     // Simply check if this is a JSON file - assume all JSON uploads are config files
     isStationConfigFile = filename.endsWith(".json");
@@ -1860,7 +1892,7 @@ void handleFileUpload() {
     }
     
     // Always write to temp file first
-    Serial.printf("Writing to temp file: %s\n", tempFilename.c_str());
+    Serial.printf_P(PSTR("Writing to temp file: %s\n"), tempFilename.c_str());
     fsUploadFile = SPIFFS.open(tempFilename, "w");
     if (!fsUploadFile) {
       Serial.println("Failed to open file for writing");
@@ -1874,7 +1906,7 @@ void handleFileUpload() {
     
     // Check if file exceeds size limit
     if (totalBytes > MAX_FILE_SIZE) {
-      Serial.printf("ERROR: File too large, max size is %u bytes\n", MAX_FILE_SIZE);
+      Serial.printf_P(PSTR("ERR: File too large, max size is %u bytes\n"), MAX_FILE_SIZE);
       uploadError = "File too large, max size is 100KB";
       
       // Close and delete the partial file
@@ -1888,15 +1920,13 @@ void handleFileUpload() {
       // Write data directly to SPIFFS without storing in memory
       size_t bytesWritten = fsUploadFile.write(upload.buf, upload.currentSize);
       
-      // Add debug every ~10KB to monitor the upload progress
+      // Every ~10KB to monitor the upload progress
       if (totalBytes % 10240 < upload.currentSize) {
-        Serial.printf("Upload progress: %u bytes written\n", totalBytes);
-        Serial.printf("Free heap: %u\n", ESP.getFreeHeap());
+        Serial.printf_P(PSTR("Upload progress: %u bytes written | Free heap: %u\n"), totalBytes, ESP.getFreeHeap());
       }
       
       if (bytesWritten != upload.currentSize) {
-        Serial.printf("Write error: only %u of %u bytes written\n", 
-                       bytesWritten, upload.currentSize);
+        Serial.printf_P(PSTR("Write error: only %u of %u bytes written\n"), bytesWritten, upload.currentSize);
         uploadError = "Write error: only " + String(bytesWritten) + " of " + 
                       String(upload.currentSize) + " bytes written";
       }
@@ -1910,18 +1940,18 @@ void handleFileUpload() {
     
     if (fsUploadFile) {
       fsUploadFile.close();
-      Serial.printf("Upload Complete: %u bytes in %lu ms\n", totalBytes, uploadDuration);
+      Serial.printf_P(PSTR("Upload Complete: %u bytes in %lu ms\n"), totalBytes, uploadDuration);
       
       // Process the JSON file as a station config
       if (isStationConfigFile) {
         // Validate the uploaded file before replacing existing configuration
         String validationError;
         if (!validateJsonFile(tempFilename.c_str(), validationError)) {
-          Serial.printf("Validation failed: %s\n", validationError.c_str());
-          Serial.println("Deleting invalid temp file");
+          Serial.printf_P(PSTR("Validation failed: %s\n"), validationError.c_str());
+          Serial.println(F("Deleting invalid temp file"));
           SPIFFS.remove(tempFilename);
-          Serial.println("Keeping existing configuration");
-          Serial.println("=========================================");
+          Serial.println(F("Keeping existing configuration"));
+          Serial.println(F("========================================="));
           // Send error response immediately
           StaticJsonDocument<256> errorResponse;
           errorResponse["error"] = "Validation failed: " + validationError;
@@ -1931,47 +1961,47 @@ void handleFileUpload() {
           return;
         }
         
-        Serial.println("Uploaded file validated!");
+        Serial.println(F("Uploaded file validated!"));
         
         // If existing config exists, remove it
         if (SPIFFS.exists("/station_config.json")) {
-          Serial.println("Removing existing station config");
+          Serial.println(F("Removing existing station config"));
           SPIFFS.remove("/station_config.json");
         }
         
         // Rename temp file to the actual config file
-        Serial.printf("Renaming %s to /station_config.json\n", tempFilename.c_str());
+        Serial.printf_P(PSTR("Renaming %s to /station_config.json\n"), tempFilename.c_str());
         if (SPIFFS.rename(tempFilename, "/station_config.json")) {
-          Serial.println("File replaced successfully");
+          Serial.println(F("File replaced successfully"));
         } else {
-          Serial.println("Error replacing file");
+          Serial.println(F("Error replacing file"));
           uploadError = "Error renaming temporary file";
         }
         
         // Update the current config filename to the original uploaded filename
         currentConfigFilename = upload.filename;
-        Serial.printf("Updating config filename to: %s\n", currentConfigFilename.c_str());
+        Serial.printf_P(PSTR("Updating config filename to: %s\n"), currentConfigFilename.c_str());
         
         // Save this filename to SPIFFS so it persists across reboots
         saveConfigFilename(currentConfigFilename);
         
         configLoaded = false;
-        Serial.println("Loading new station configuration");
+        Serial.println(F("Loading new station configuration"));
         loadStationConfig();
         
         if (configLoaded) {
-          Serial.println("New configuration loaded successfully");
-          Serial.println("=========================================");
+          Serial.println(F("New configuration loaded successfully"));
+          Serial.println(F("========================================="));
           // Select first available options from the new config
           selectFirstAvailableOptions();
         } else {
-          Serial.println("Failed to load new configuration");
-          Serial.println("=========================================");
+          Serial.println(F("Failed to load new configuration"));
+          Serial.println(F("========================================="));
           uploadError = "Failed to load new configuration";
         }
       }
       else {
-        Serial.printf("File uploaded as: %s (not a station configuration)\n", tempFilename.c_str());
+        Serial.printf_P(PSTR("File uploaded as: %s (not a station configuration)\n"), tempFilename.c_str());
       }
     }
     else {
@@ -1988,15 +2018,15 @@ void handleFileUpload() {
 // Load Station Config Json
 //===============================================================
 void loadStationConfig() {
-  Serial.println("===== Loading Station Config Json=====");
+  Serial.println(F("===== Loading Station Config Json====="));
   if (!SPIFFS.exists("/station_config.json")) {
-    Serial.println("Config file not found, creating default Station config");
+    Serial.println(F("Config file not found, creating default Station config"));
     createDefaultConfig();
   }
 
   File file = SPIFFS.open("/station_config.json", "r");
   if (!file) {
-    Serial.println("Failed to open Station config file");
+    Serial.println(F("Failed to open Station config file"));
     return;
   }
 
@@ -2035,8 +2065,8 @@ void loadStationConfig() {
   file.close();
 
   if (totalBytesRead != fileSize) {
-    Serial.printf("File read incomplete: expected %u bytes, got %u bytes\n", fileSize, totalBytesRead);
-    Serial.println("Aborting JSON parsing due to incomplete file read");
+    Serial.printf_P(PSTR("File read incomplete: expected %u bytes, got %u bytes\n"), fileSize, totalBytesRead);
+    Serial.println(F("Aborting JSON parsing due to incomplete file read"));
     return;
   }
 
@@ -2221,7 +2251,7 @@ void handleSequencePlay() {
 void updateStationForSequence(const char* line, const char* station, const char* track) {
     if (!configLoaded) return;
     
-    Serial.printf("Updating station for sequence: %s - %s - %s\n", line, station, track);
+    Serial.printf_P(PSTR("Updating station for sequence: %s - %s - %s\n"), line, station, track);
     
     JsonObject stationData = stationConfig["lines"][line]["stations"][station];
     JsonObject trackData = stationData["Trk"][track];
@@ -2241,15 +2271,15 @@ void updateStationForSequence(const char* line, const char* station, const char*
     // Signal UI to update
     notifyUIofStationChange();
     
-    Serial.println("Station updated for sequence, UI notification sent");
-    Serial.println("====================================================");
+    Serial.println(F("Station updated for sequence, UI notification sent"));
+    Serial.println(F("===================================================="));
 }
 
 //===============================================================
 // Notify UI of Station Changes
 //===============================================================
 void notifyUIofStationChange() {
-  Serial.println("Sending UI updates");
+  Serial.println(F("Sending UI updates"));
   
   // Create a JSON document with the updated station info
   StaticJsonDocument<512> doc;
@@ -2264,7 +2294,7 @@ void notifyUIofStationChange() {
   
   // Increment the counter instead of setting a flag
   stationChangeCounter++;
-  Serial.printf("Station change counter: %d\n", stationChangeCounter);
+  Serial.printf_P(PSTR("Station change counter: %d\n"), stationChangeCounter);
 }
 
 //===============================================================
@@ -2294,12 +2324,255 @@ void checkWiFiConnection() {
   if (millis() - lastCheck > 60000) {  // Check every 60 seconds
     lastCheck = millis();
     if (WiFi.status() != WL_CONNECTED) {
-      Serial.println("WiFi connection lost, reconnecting...");
+      Serial.println(F("WiFi connection lost, reconnecting..."));
       WiFi.reconnect();
     }else {
-      Serial.println("Wifi health check passed");
+      //Serial.println(F("Wifi health check passed"));
     }
   }
+}
+
+// Serial shell command
+void processCommand() {
+    serialCommand.trim();  // Remove leading/trailing whitespace
+    
+    // Always print a new line and prompt for empty commands
+    if (serialCommand.length() == 0) {
+        Serial.print(PROMPT);
+        return;
+    }
+    
+    Serial.println("Command: " + serialCommand);
+    
+    // Convert command to lowercase for case-insensitive comparison
+    String cmd = serialCommand;
+    cmd.toLowerCase();
+    
+    // Split command into parts (for commands with parameters)
+    int spaceIndex = cmd.indexOf(' ');
+    String command = (spaceIndex == -1) ? cmd : cmd.substring(0, spaceIndex);
+    String param = (spaceIndex == -1) ? "" : cmd.substring(spaceIndex + 1);
+    
+    if (command == "health") {
+        checkSysHealth();
+    } 
+    else if (command == "help") {
+        Serial.println(F("\n============= JR-Beru Shell Commands ============="));
+        Serial.println(F("health             - Display system health information"));
+        Serial.println(F("status             - Display current station and playback status"));
+        Serial.println(F("volume [0-30]      - Get or set volume level"));
+        Serial.println(F("play melody/atos/chime/va - Play current melody/atos/chime/va"));
+        Serial.println(F("ls /               - List files on SPIFFS"));
+        Serial.println(F("ls stations        - List available stations"));
+        Serial.println(F("station [line] [station] [track] - Set current station"));
+        Serial.println(F("reset wifi/player  - Reset the WiFi or DFPlayer"));
+        Serial.println(F("reboot             - Restart ESP32"));
+        Serial.println(F("help               - Display help"));
+        Serial.println(F("================================================="));
+    }
+    else if (command == "status") {
+        Serial.println(F("\n======== Current Status ========"));
+        Serial.printf_P(PSTR("Current Line: %s\n"), currentStation.stationCodeLine);
+        Serial.printf_P(PSTR("Current Station: %s (%s)\n"), currentStation.stationNameJa, currentStation.stationNameEn);
+        Serial.printf_P(PSTR("Current Track: %s\n"), currentStation.trackKey);
+        Serial.printf_P(PSTR("Volume: %d/30\n"), globalVolume);
+        Serial.printf_P(PSTR("WiFi Status: %s\n"), WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected");
+        if (WiFi.status() == WL_CONNECTED) {
+            Serial.printf_P(PSTR("IP Address: %s\n"), WiFi.localIP().toString().c_str());
+        }
+        Serial.println(F("==============================="));
+    }
+    else if (command == "volume") {
+        if (param.length() > 0) {
+            // Set volume
+            int newVolume = param.toInt();
+            if (newVolume >= 0 && newVolume <= 30) {
+                globalVolume = newVolume;
+                myDFPlayer.volume(globalVolume);
+                Serial.printf("Volume set to %d\n", globalVolume);
+                saveDeviceState(); // Save the new volume setting
+            } else {
+                Serial.println(F("Invalid volume level. Use a value between 0-30."));
+            }
+        } else {
+            // Get current volume
+            Serial.printf("Current volume: %d/30\n", globalVolume);
+        }
+    }
+    else if (command == "play") {
+        if (param == "melody") {
+            Serial.printf_P(PSTR("Playing melody %d\n"), currentMelody);
+            myDFPlayer.playFolder(MelodyFolder, currentMelody);
+        } 
+        else if (param == "atos") {
+            Serial.printf_P(PSTR("Playing ATOS announcement %d\n"), currentAtos);
+            myDFPlayer.playFolder(AtosFolder, currentAtos);
+        }
+        else if (param == "chime") {
+            Serial.printf_P(PSTR("Playing door chime %d\n"), currentDoorChime);
+            myDFPlayer.playFolder(DoorChimeFolder, currentDoorChime);
+        }
+        else if (param == "va") {
+            Serial.printf_P(PSTR("Playing platform announcement %d\n"), currentVA);
+            myDFPlayer.playFolder(VAFolder, currentVA);
+        }
+        else {
+            Serial.println(F("Invalid play parameter. Use: melody, atos, chime, or va"));
+        }
+    }
+    else if (command == "ls") {
+        if (param == "/") {
+            Serial.println(F("\n======== SPIFFS Files ========"));
+            File root = SPIFFS.open("/");
+            File file = root.openNextFile();
+            int fileCount = 0;
+            
+            while (file) {
+                String fileName = file.name();
+                size_t fileSize = file.size();
+                Serial.printf_P(PSTR("%s (%d bytes)\n"), fileName.c_str(), fileSize);
+                file = root.openNextFile();
+                fileCount++;
+            }
+            
+            if (fileCount == 0) {
+                Serial.println(F("No files found"));
+            }
+            
+            Serial.println(F("=============================="));
+        }
+        else if (param == "stations") {
+            Serial.println(F("\n======== Available Stations ========"));
+            
+            // Iterate through lines
+            for (JsonPair linePair : stationConfig["lines"].as<JsonObject>()) {
+                String lineCode = linePair.key().c_str();
+                Serial.printf_P(PSTR("Line: %s\n"), lineCode.c_str());
+                
+                // Iterate through stations in this line
+                JsonObject stations = linePair.value()["stations"];
+                for (JsonPair stationPair : stations) {
+                    String stationName = stationPair.key().c_str();
+                    JsonObject stationData = stationPair.value();
+                    
+                    // Get station info
+                    String stationJa = stationData["sInfo"]["Ja"].as<String>();
+                    String stationCode = stationData["sInfo"]["sC"].as<String>();
+                    
+                    // List tracks for this station
+                    JsonObject tracks = stationData["Trk"];
+                    int trackCount = 0;
+                    String trackList = "";
+                    
+                    for (JsonPair trackPair : tracks) {
+                        if (trackCount > 0) trackList += ", ";
+                        trackList += trackPair.key().c_str();
+                        trackCount++;
+                    }
+                    
+                    Serial.printf_P(PSTR("  - %s (%s, %s) - Tracks: %s\n"), 
+                        stationName.c_str(), 
+                        stationJa.c_str(),
+                        stationCode.c_str(),
+                        trackList.c_str());
+                }
+                Serial.println();
+            }
+            
+            Serial.println(F("=================================="));
+        }
+        else {
+            Serial.println(F("Invalid ls parameter. Use: / or stations"));
+        }
+    }
+    else if (command == "station") {
+        // Parse parameters: line station track
+        int firstSpace = param.indexOf(' ');
+        if (firstSpace == -1) {
+            Serial.println(F("Invalid format. Use: station [line] [station] [track]"));
+            Serial.print(PROMPT);
+            return;
+        }
+        
+        String line = param.substring(0, firstSpace);
+        param = param.substring(firstSpace + 1);
+        
+        int secondSpace = param.indexOf(' ');
+        if (secondSpace == -1) {
+            Serial.println(F("Invalid format. Use: station [line] [station] [track]"));
+            Serial.print(PROMPT);
+            return;
+        }
+        
+        String station = param.substring(0, secondSpace);
+        String track = param.substring(secondSpace + 1);
+        
+        // Validate parameters
+        if (!stationConfig["lines"].containsKey(line)) {
+            Serial.printf_P(PSTR("Line '%s' not found\n"), line.c_str());
+            Serial.print(PROMPT);
+            return;
+        }
+        
+        if (!stationConfig["lines"][line]["stations"].containsKey(station)) {
+            Serial.printf_P(PSTR("Station '%s' not found in line '%s'\n"), station.c_str(), line.c_str());
+            Serial.print(PROMPT);
+            return;
+        }
+        
+        if (!stationConfig["lines"][line]["stations"][station]["Trk"].containsKey(track)) {
+            Serial.printf_P(PSTR("Track '%s' not found in station '%s'\n"), track.c_str(), station.c_str());
+            Serial.print(PROMPT);
+            return;
+        }
+        
+        // Update current station
+        JsonObject stationData = stationConfig["lines"][line]["stations"][station];
+        JsonObject trackData = stationData["Trk"][track];
+        JsonObject style = stationConfig["lines"][line]["style"];
+        
+        updateCurrentStation(stationData, trackData, style, line.c_str(), station.c_str(), track.c_str());
+        saveDeviceState();
+        
+        Serial.printf_P(PSTR("Station set to: %s, %s, %s\n"), line.c_str(), station.c_str(), track.c_str());
+    }
+    else if (command == "reset") {
+        if (param == "player") {
+            Serial.println(F("Resetting DFPlayer Mini..."));
+            myDFPlayer.reset();
+            delay(1000);
+            myDFPlayer.volume(globalVolume);
+            Serial.println(F("DFPlayer reset complete."));
+        }
+        else if (param == "wifi") {
+            Serial.println(F("Resetting WiFi settings..."));
+            WiFiManager wm;
+            wm.resetSettings();
+            Serial.println(F("WiFi settings reset. Device will restart..."));
+            delay(1000);
+            ESP.restart();
+        }
+        else {
+            Serial.println(F("Invalid reset parameter. Use: player or wifi"));
+        }
+    }
+    else if (command == "reboot") {
+        Serial.println(F("Rebooting ESP32..."));
+        delay(1000);
+        ESP.restart();
+    }
+    else {
+        Serial.print(F("Unknown command: "));
+        Serial.println(serialCommand);
+        Serial.println(F("Type 'help' for available commands"));
+    }
+    
+    // Reset for next command
+    serialCommand = "";
+    commandComplete = false;
+    
+    // Show prompt
+    Serial.print(PROMPT);
 }
 
 

@@ -71,6 +71,7 @@ https://github.com/user-attachments/assets/d483ad4e-555a-42a0-9bc5-4ab3171fd644
 - **Dual-core operation**: Audio playback and web interface run on different cores for improved reliability.
 - **Memory optimization**: Efficient handling of large JSON configuration files.
 - **Serial Output**: Detailed status logs for monitoring and debugging.
+- **Serial Shell**: Interactive command-line interface for device control and diagnostics.
 
 ---
 
@@ -251,6 +252,9 @@ WiFi Connected!
 IP Address: 192.168.1.2
 Web server started!
 ========Boot up Completed!========
+
+Serial shell activated. Type 'help' for available commands.
+JR-Beru_: 
 ```
 
 ### Audio Playback Status
@@ -289,6 +293,69 @@ Web server started!
 3. Ensure "Newline" is selected for line ending.
 4. Power cycle the device to see boot sequence.
 5. Monitor real-time operation status.
+
+## Serial Shell
+
+The device includes an interactive command-line interface accessible through the serial monitor at 115200 baud rate. This shell provides direct control and diagnostic capabilities without requiring the web interface.
+
+### Available Commands
+
+| Command | Description |
+| --- | --- |
+| `health` | Display system health information (memory usage, SPIFFS usage, etc.) |
+| `status` | Show current station and playback status |
+| `volume [0-30]` | Get or set the volume level |
+| `play melody` | Play current melody |
+| `play atos` | Play current ATOS announcement |
+| `play chime` | Play current door chime |
+| `play va` | Play current platform announcement |
+| `list files` | List files on SPIFFS |
+| `list stations` | List available stations with their tracks |
+| `station [line] [station] [track]` | Set current station (e.g., `station JY Tokyo 4`) |
+| `reset player` | Reset the DFPlayer Mini |
+| `reset wifi` | Reset WiFi settings |
+| `restart` | Restart the ESP32 |
+| `help` | Display list of available commands |
+
+### Using the Serial Shell
+
+1. Connect to the device using a serial terminal (Arduino IDE Serial Monitor or other terminal program)
+2. Set the baud rate to 115200
+3. After the device boots, you'll see the `JR-Beru_:` prompt
+4. Type a command and press Enter to execute
+5. For commands with parameters, separate them with spaces (e.g., `volume 20`)
+
+Example session:
+```
+JR-Beru_: help
+======== Available Commands ========
+health           - Display system health information
+status           - Display current station and playback status
+volume [0-30]    - Get or set volume level
+play melody      - Play current melody
+play atos        - Play current ATOS announcement
+play chime       - Play current door chime
+play va          - Play current platform announcement
+list files       - List files on SPIFFS
+list stations    - List available stations
+station [line] [station] [track] - Set current station
+reset player     - Reset the DFPlayer Mini
+reset wifi       - Reset WiFi settings
+restart          - Restart the ESP32
+help             - Display this help message
+====================================
+JR-Beru_: status
+
+======== Current Status ========
+Current Line: JY
+Current Station: 東京 (Tokyo)
+Current Track: 4
+Volume: 22/30
+WiFi Status: Connected
+IP Address: 192.168.1.2
+===============================
+JR-Beru_: 
+```
 
 ---
 
