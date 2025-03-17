@@ -1068,8 +1068,8 @@ void handleRoot() {
 "    })"
 "    .catch(e => console.error('Error checking station changes:', e));"
 "}"
-// Poll every 3 seconds
-"setInterval(pollStationChanges, 3000);"
+// Poll every 5 seconds
+"setInterval(pollStationChanges, 5000);"
 
           // Add an event listener to set the playback mode on page load
           "document.getElementById('playMode').addEventListener('change', function() {"
@@ -1105,7 +1105,7 @@ String populateOptions(const char* folderName, int count, int selectedOption) {
 //===============================================================
 
 void UpdateFileCount() {
-   Serial.println(F("\n=====Audio File Count:====="));
+   Serial.println(F("\n=== Indexing Audio File ==="));
 
    MelodyCount = CheckFileInFolder(MelodyFolder);
     Serial.printf("Melody Files: %d\n", MelodyCount);
@@ -1119,7 +1119,7 @@ void UpdateFileCount() {
    VACount = CheckFileInFolder(VAFolder);
     Serial.printf("VA Files: %d\n", VACount);
     
-   Serial.println(F("==========================="));
+   for (int i = 0; i < 27; i++) Serial.print("=");Serial.println("\n");// print 27 equal signs
 }
 
 //===============================================================
@@ -1179,7 +1179,7 @@ int CheckFileInFolder(int folder) {
     delay(10); // Short delay between retries
   }
   
-  return (fileCount > 0) ? fileCount : 0; // Return 0 if no valid count
+  return (fileCount > 0) ? fileCount : 1; // Return 1 if no valid count
 }
 
 
@@ -1211,7 +1211,7 @@ void handleButton() {
         } else if (loopPlaying) {
           Serial.println(F("\n==Button Released=="));
             //myDFPlayer.stop();
-            myDFPlayer.disableLoop();
+            myDFPlayer.disableLoop();myDFPlayer.disableLoop();
             loopPlaying = false;
             handlePlayAtos();
 
@@ -1639,7 +1639,7 @@ void setupWebServer() {
       Serial.printf_P(PSTR("\n===== PLAYBACK MODE CHANGE ======\n"));
       Serial.printf_P(PSTR("Previous mode: %s\n"), playbackMode.c_str());
       Serial.printf_P(PSTR("Current mode: %s\n"), mode.c_str());
-      Serial.println(F("================================"));
+      for (int i = 0; i < 25; i++) Serial.print("=");Serial.println("\n");// print 25 equal signs
       
       // Reset sequence flag when changing modes
       sequenceInProgress = false;
@@ -1911,7 +1911,7 @@ void loadDeviceState() {
         Serial.println(F("No station data in saved state"));
     }
     
-    Serial.println(F("===========================\n"));
+    for (int i = 0; i < 28; i++) Serial.print("=");Serial.println("\n");// print 28 equal signs
 }
 
 
@@ -2098,7 +2098,7 @@ void handleFileUpload() {
           Serial.println(F("Deleting invalid temp file"));
           SPIFFS.remove(tempFilename);
           Serial.println(F("Keeping existing configuration"));
-          Serial.println(F("========================================="));
+          for (int i = 0; i < 41; i++) Serial.print("=");Serial.println();// print 41 equal signs
           // Send error response immediately
           StaticJsonDocument<256> errorResponse;
           errorResponse["error"] = "Validation failed: " + validationError;
@@ -2138,12 +2138,12 @@ void handleFileUpload() {
         
         if (configLoaded) {
           Serial.println(F("New configuration loaded successfully"));
-          Serial.println(F("========================================="));
+          for (int i = 0; i < 41; i++) Serial.print("=");Serial.println();// print 41 equal signs
           // Select first available options from the new config
           selectFirstAvailableOptions();
         } else {
           Serial.println(F("Failed to load new configuration"));
-          Serial.println(F("========================================="));
+          for (int i = 0; i < 41; i++) Serial.print("=");Serial.println();// print 41 equal signs
           uploadError = "Failed to load new configuration";
         }
       }
@@ -2265,7 +2265,7 @@ bool loadStationConfig() {
   configLoaded = true;
   Serial.println("Station Config Json Loaded");
   Serial.printf("Final heap after loading: %u\n", ESP.getFreeHeap());
-  Serial.println("======================================");
+  for (int i = 0; i < 38; i++) Serial.print("=");Serial.println("\n");// print 38 equal signs
   return true;
 }
 
@@ -2481,23 +2481,20 @@ void sequenceHandlerTask(void * parameter) {
     // Wait for signal from the queue
     if (xQueueReceive(sequenceQueue, &signal, portMAX_DELAY) == pdTRUE) {
       if (signal) {
-        Serial.println(F("==================Sequence Handler=================="));
+        Serial.println(F("================Sequence Handler================"));
         
         // Add a small delay to ensure audio has finished processing
         delay(100);
-        
         // Process the sequence
         handleSequencePlay();
-        
         // Reset the sequence in progress flag after a delay
         // This prevents multiple triggers in quick succession
         delay(500);
         sequenceInProgress = false;
-        
-        Serial.println(F("==================Sequence Complete================="));
+        for (int i = 0; i < 48; i++) Serial.print("=");Serial.println("\n");// print 48 equal signs
+
       }
     }
-    
     // Small delay to prevent watchdog issues
     delay(10);
   }
@@ -2539,12 +2536,15 @@ void updateCurrentStation(JsonObject stationData, JsonObject trackData, JsonObje
     currentStation.stationNameHiragana = stationInfo[2].as<const char*>();   // Hi -> i[2]
     currentStation.stationNameKo = stationInfo[3].as<const char*>();         // Ko -> i[3]
     currentStation.stationNameEn = station;
-    currentStation.prevStation = trackData["Dir"]["p"]["Ja"].as<const char*>();
-    currentStation.prevStationEn = trackData["Dir"]["p"]["En"].as<const char*>();
-    currentStation.nextStation = trackData["Dir"]["n"]["Ja"].as<const char*>();
-    currentStation.nextStationEn = trackData["Dir"]["n"]["En"].as<const char*>();
+    currentStation.prevStation = trackData["Direction"]["PreviousStation"]["Ja"].as<const char*>();
+    currentStation.prevStationEn = trackData["Direction"]["PreviousStation"]["En"].as<const char*>();
+    currentStation.nextStation = trackData["Direction"]["NextStation"]["Ja"].as<const char*>();
+    currentStation.nextStationEn = trackData["Direction"]["NextStation"]["En"].as<const char*>();
     currentStation.wardBox = stationInfo[4].as<const char*>();               // wB -> i[4]
     currentStation.trackKey = track;
+    
+    // Update the sequenceLine variable for sequence mode
+    sequenceLine = line;
 }
 
 //===============================================================
@@ -2580,7 +2580,7 @@ void checkSysHealth() {
     Serial.printf("SPIFFS    : %.1f%% used (%u KB free)\n", 
                  health.spiffsUsagePercent, (totalBytes - usedBytes) / 1024);
     Serial.printf("CPU Temp  : %.1f°C\n", health.temperature);
-    Serial.println(F("=============================\n"));
+    Serial.println(F("===============================\n"));
     
     // Optional: Log warnings for high usage
     if (health.heapUsagePercent > 80.0f) 
@@ -2624,14 +2624,14 @@ bool parseTrackData(JsonArray trackArray, JsonObject& trackData, const String& t
     // Direction data
     JsonArray prevArray = trackArray[4];
     if (prevArray && prevArray.size() >= 2) {
-        trackData["Dir"]["p"]["Ja"] = prevArray[0];
-        trackData["Dir"]["p"]["En"] = prevArray[1];
+        trackData["Direction"]["PreviousStation"]["Ja"] = prevArray[0];
+        trackData["Direction"]["PreviousStation"]["En"] = prevArray[1];
     }
     
     JsonArray nextArray = trackArray[5];
     if (nextArray && nextArray.size() >= 2) {
-        trackData["Dir"]["n"]["Ja"] = nextArray[0];
-        trackData["Dir"]["n"]["En"] = nextArray[1];
+        trackData["Direction"]["NextStation"]["Ja"] = nextArray[0];
+        trackData["Direction"]["NextStation"]["En"] = nextArray[1];
     }
     
     return true;
@@ -2717,13 +2717,12 @@ void processCommand() {
         Serial.println(F("volume [0-30]      - Get or set volume level"));
         Serial.println(F("play melody/atos/chime/va - Play current melody/atos/chime/va"));
         Serial.println(F("index              - Reindex the file Count of the DFPlayer"));
-        Serial.println(F("ls /               - List files on SPIFFS"));
-        Serial.println(F("ls stations        - List available stations"));
+        Serial.println(F("ls / or stations   - List files on SPIFFS or available stations"));
         Serial.println(F("station [line] [station] [track] - Set current station"));
         Serial.println(F("reset wifi/player  - Reset the WiFi or DFPlayer"));
         Serial.println(F("reboot             - Restart ESP32"));
         Serial.println(F("help               - Display help"));
-        Serial.println(F("================================================="));
+        for (int i = 0; i < 51; i++) Serial.print("=");Serial.println("\n");// print 51 equal signs
     }
     else if (command == "status") {
         Serial.println(F("\n======== Current Status ========"));
@@ -2735,7 +2734,7 @@ void processCommand() {
         if (WiFi.status() == WL_CONNECTED) {
             Serial.printf_P(PSTR("IP Address: %s\n"), WiFi.localIP().toString().c_str());
         }
-        Serial.println(F("==============================="));
+        for (int i = 0; i < 32; i++) Serial.print("=");Serial.println("\n");// print 32 equal signs
     }
     else if (command == "volume") {
         if (param.length() > 0) {
@@ -2776,8 +2775,8 @@ void processCommand() {
         }
     }
     else if (command == "ls") {
-        if (param == "/") {
-            Serial.println(F("\n======== SPIFFS Files ========"));
+        if (param == "/" || param == "") {
+            Serial.println(F("\n======== SPIFFS Files System ========\n"));
             File root = SPIFFS.open("/");
             File file = root.openNextFile();
             int fileCount = 0;
@@ -2793,11 +2792,12 @@ void processCommand() {
             if (fileCount == 0) {
                 Serial.println(F("No files found"));
             }
-            
-            Serial.println(F("=============================="));
+            Serial.println("");
+            for (int i = 0; i < 37; i++) Serial.print("=");Serial.println("\n");// print 37 equal signs
+            //=======================================================================================
         }
         else if (param == "stations") {
-            Serial.println(F("\n==== Available Stations ===="));
+            Serial.println(F("\n=================== Available Stations ==================="));
             
             for (JsonPair linePair : stationConfig["lines"].as<JsonObject>()) {
                 String lineCode = linePair.key().c_str();
@@ -2834,7 +2834,8 @@ void processCommand() {
                 Serial.println();
             }
             
-            Serial.println(F("=================================="));
+            for (int i = 0; i < 58; i++) Serial.print("=");Serial.println("\n");// print 58 equal signs
+           //=======================================================================================
         }
         else {
             Serial.println(F("Invalid ls parameter. Use: / or stations"));
@@ -2913,7 +2914,8 @@ void processCommand() {
     }
     else if (command == "index") {
         Serial.println(F("Indexing DFPlayer files..."));
-        UpdateFileCount();
+            myDFPlayer.reset();delay(2000);myDFPlayer.volume(globalVolume);delay(2000);
+            UpdateFileCount();
         Serial.println(F("Indexing complete."));
     }
     else {
