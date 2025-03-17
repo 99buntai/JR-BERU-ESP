@@ -23,7 +23,7 @@ void printDetail(uint8_t type, int value);
 //================================
 // Global Configuration Constants
 //================================
-#define FW_VERSION      "ESP32-MCU-R0.4.10 WebUI-R3.2.5"  // Current firmware version
+#define FW_VERSION      "ESP32-MCU-R0.4.11 WebUI-R3.2.6"  // Current firmware version
 
 // Audio folder mappings on SD card
 int MelodyFolder = 1;    // /01/ - Contains departure melodies
@@ -2530,8 +2530,8 @@ void updateCurrentStation(JsonObject stationData, JsonObject trackData, JsonObje
     JsonArray stationInfo = stationData["i"];
     
     currentStation.lineCode = stationInfo[0].as<const char*>();              // sC -> i[0]
-    currentStation.stationCodeLine = trackData["Marker"]["LC"].as<const char*>();
-    currentStation.stationNumber = trackData["Marker"]["sNum"].as<const char*>();
+    currentStation.stationCodeLine = trackData["Marker"]["lineCode"].as<const char*>();
+    currentStation.stationNumber = trackData["Marker"]["stationNumber"].as<const char*>();
     currentStation.lineMarkerBgColor = style["lineMarkerBgColor"].as<const char*>();
     currentStation.lineNumberBgColor = style["lineNumberBgColor"].as<const char*>();
     currentStation.directionBarBgColor = style["directionBarBgColor"].as<const char*>();
@@ -2609,15 +2609,15 @@ bool parseTrackData(JsonArray trackArray, JsonObject& trackData, const String& t
     if (targetTrack.length() > 0 && trackKey != targetTrack) return false;
     
     // Marker data
-    trackData["Marker"]["LC"] = trackArray[1];
-    trackData["Marker"]["sNum"] = trackArray[2];
+    trackData["Marker"]["lineCode"] = trackArray[1];
+    trackData["Marker"]["stationNumber"] = trackArray[2];
     
     // Audio data
     JsonArray audioArray = trackArray[3];
     if (audioArray && audioArray.size() >= 4) {
         trackData["audio"]["melody"] = audioArray[0];
         trackData["audio"]["atos"] = audioArray[1];
-        trackData["audio"]["dC"] = audioArray[2];
+        trackData["audio"]["doorChime"] = audioArray[2];
         trackData["audio"]["va"] = audioArray[3];
     }
     
@@ -2716,6 +2716,7 @@ void processCommand() {
         Serial.println(F("status             - Display current station and playback status"));
         Serial.println(F("volume [0-30]      - Get or set volume level"));
         Serial.println(F("play melody/atos/chime/va - Play current melody/atos/chime/va"));
+        Serial.println(F("index              - Reindex the file Count of the DFPlayer"));
         Serial.println(F("ls /               - List files on SPIFFS"));
         Serial.println(F("ls stations        - List available stations"));
         Serial.println(F("station [line] [station] [track] - Set current station"));
@@ -2909,6 +2910,11 @@ void processCommand() {
         Serial.println(F("Rebooting ESP32..."));
         delay(1000);
         ESP.restart();
+    }
+    else if (command == "index") {
+        Serial.println(F("Indexing DFPlayer files..."));
+        UpdateFileCount();
+        Serial.println(F("Indexing complete."));
     }
     else {
         Serial.print(F("Unknown command: "));

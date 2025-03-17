@@ -357,6 +357,63 @@ IP Address: 192.168.1.2
 JR-Beru_: 
 ```
 
+## Station Config JSON File Structure
+
+- Structure Details:
+  - lines: Available JR lines (JY, JK, etc.)
+  - style: Visual styling for the station sign elements (colors)
+  - lineMarkerBgColor: Background color for the line marker
+  - lineNumberBgColor: Background color for the station number display
+  - directionBarBgColor: Background color for the direction indicator bars
+  - stations: List of stations on the selected line
+    - i: Station information array: [stationCode, nameJa, nameHiragana, nameEn, wardBox]
+      - Element 0: Station code (e.g., "AKB")
+      - Element 1: Japanese station name (e.g., "秋葉原")
+      - Element 2: Hiragana reading (e.g., "あきはばら")
+      - Element 3: English station name (e.g., "Akihabara")
+      - Element 4: Ward designation (e.g., "山")
+    - t: Array of track configurations, each containing:
+      - Element 0: Track name (e.g., "Track1")
+      - Element 1: Line code (e.g., "JY")
+      - Element 2: Station number (e.g., "03")
+      - Element 3: Audio file indices [melody, atos, doorchime, platform]
+      - Element 4: Previous station info [nameJa, nameEn]
+      - Element 5: Next station info [nameJa, nameEn]
+
+- Example JSON file:
+``` 
+{
+  "lines": {
+    "JY": {
+      "style": {
+        "lineMarkerBgColor": "#000000",
+        "lineNumberBgColor": "#80c241",
+        "directionBarBgColor": "#006400"
+      },
+      "stations": {
+        "Default Config": {
+          "i": ["AKB", "秋葉原", "あきはばら", "Akihabara", "山"],
+          "t": [
+            [
+              "Track1", 
+              "JY", 
+              "03", 
+              [1, 1, 1, 1], 
+              ["前の駅", "Previous Station"], 
+              ["次の駅", "Next Station"]
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+
+
+
+
 ---
 
 ## Credits
