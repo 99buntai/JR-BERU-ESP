@@ -67,39 +67,48 @@ char pass[32];  // Stores password of the WiFi network
 
 // Add these variables to store current station data
 struct StationData {
-    String lineCode;
-    String stationCodeLine;
-    String stationNumber;
-    String lineMarkerBgColor;
-    String lineNumberBgColor;
-    String directionBarBgColor;
-    String stationNameJa;
-    String stationNameHiragana;
-    String stationNameKo;
-    String stationNameEn;
-    String prevStation;
-    String prevStationEn;
-    String nextStation;
-    String nextStationEn;
-    String wardBox;
-    String trackKey;
+    String lineCode = "";
+    String stationCodeLine = "";
+    String stationNumber = "";
+    String lineMarkerBgColor = "#FFFFFF";
+    String lineNumberBgColor = "#FFFFFF";
+    String directionBarBgColor = "#FFFFFF";
+    String stationNameJa = "";
+    String stationNameHiragana = "";
+    String stationNameKo = "";
+    String stationNameEn = "";
+    String prevStation = "";
+    String prevStationEn = "";
+    String nextStation = "";
+    String nextStationEn = "";
+    String wardBox = "";
+    String trackKey = "";
+
+    // Constructor with default initialization
+    StationData() = default;
+
+    // Reset function to clear all values
+    void reset() {
+        lineCode = stationCodeLine = stationNumber = "";
+        lineMarkerBgColor = lineNumberBgColor = directionBarBgColor = "#FFFFFF";
+        stationNameJa = stationNameHiragana = stationNameKo = stationNameEn = "";
+        prevStation = prevStationEn = nextStation = nextStationEn = "";
+        wardBox = trackKey = "";
+    }
 } currentStation;
 
-// Add these near the top with other global variables
 DynamicJsonDocument stationConfig(120768); // 120KB buffer for JSON
 bool configLoaded = false;
 
-// First, add a global variable to store the current config filename
 String currentConfigFilename = "station_config.json";
 
-// First, add a new global variable to track playback mode
 String playbackMode = "selected"; // Options: "selected", "random", "sequence"
 int sequenceCurrentIndex = 0; // For tracking current position in sequence
 String sequenceLine = ""; // Current line for sequence play
 uint32_t stationChangeCounter = 0; // Counter for tracking station changes
 bool sequenceInProgress = false; // Flag to prevent multiple sequence triggers
 
-// Add this structure to hold system health data
+// This structure to hold system health data
 struct SystemHealth {
     size_t totalHeap;
     size_t freeHeap;
@@ -114,7 +123,7 @@ struct SystemHealth {
     float temperature;
 };
 
-// Add these global variables for CPU usage calculation
+// These global variables is for CPU usage calculation
 static uint32_t previousCpu0Time = 0;
 static uint32_t previousCpu1Time = 0;
 static uint32_t previousIdleTime0 = 0;
@@ -123,7 +132,7 @@ static uint32_t previousIdleTime1 = 0;
 // System monitoring
 unsigned long lastHealthCheck = 0;  // For tracking health check intervals
 
-// Add this structure near the top with other global variables
+// This structure is for device state
 struct DeviceState {
     bool randomPlay;
     int volume;
@@ -136,228 +145,11 @@ struct DeviceState {
     String selectedTrack;
 };
 
-// Add these functions to handle state management
-void saveDeviceState() {
-    StaticJsonDocument<512> doc;
-    
-    doc["randomPlay"] = RandomPlayOn;
-    doc["volume"] = globalVolume;
-    doc["melody"] = currentMelody;
-    doc["atos"] = currentAtos;
-    doc["doorChime"] = currentDoorChime;
-    doc["va"] = currentVA;
-    doc["line"] = currentStation.stationCodeLine;
-    doc["station"] = currentStation.stationNameEn;
-    doc["track"] = currentStation.trackKey;
-    doc["playbackMode"] = playbackMode; // Add playback mode to saved state
 
-    File file = SPIFFS.open("/device_state.json", "w");
-    if (file) {
-        serializeJson(doc, file);
-        file.close();
-    }
-}
 
-void loadDeviceState() {
-    Serial.println(F("\n=== Loading Device State ==="));
-    
-    if (!SPIFFS.exists("/device_state.json")) {
-        Serial.println(F("No saved state found"));
-        // Set default playback mode
-        playbackMode = "selected";
-        // If no saved state but we have config, set defaults from first available options
-        if (configLoaded) {
-            // Get the first line
-            String firstLine;
-            JsonObject lines = stationConfig["lines"];
-            for (JsonPair line : lines) {
-                firstLine = line.key().c_str();
-                break;
-            }
-            
-            // Get the first station
-            String firstStation;
-            JsonObject stations = lines[firstLine]["stations"];
-            for (JsonPair station : stations) {
-                firstStation = station.key().c_str();
-                break;
-            }
-            
-            // Get the first track
-            String firstTrack;
-            JsonObject tracks = stations[firstStation]["Trk"];
-            for (JsonPair track : tracks) {
-                firstTrack = track.key().c_str();
-                break;
-            }
-            
-            JsonObject stationData = stationConfig["lines"][firstLine]["stations"][firstStation];
-            JsonObject trackData = stationData["Trk"][firstTrack];
-            JsonObject style = stationConfig["lines"][firstLine]["style"];
-            
-            // Update currentStation with default values
-            updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());
-        }
-        return;
-    }
 
-    // Try to open the file
-    File file = SPIFFS.open("/device_state.json", "r");
-    if (!file) {
-        Serial.println(F("Failed to open device state file"));
-        playbackMode = "selected"; // Default value
-        return;
-    }
 
-    // Read the file and handle potential errors
-    String jsonStr = file.readString();
-    file.close();
-    
-    if (jsonStr.length() == 0) {
-        Serial.println(F("Empty device state file"));
-        playbackMode = "selected";
-        return;
-    }
 
-    // Try to parse the JSON with extra error handling
-    StaticJsonDocument<512> doc;
-    DeserializationError error = deserializeJson(doc, jsonStr);
-
-    if (error) {
-        Serial.print("Failed to parse device state: ");
-        Serial.println(error.c_str());
-        Serial.println("Resetting to defaults");
-        
-        // Delete corrupted file and create a new one with defaults
-        SPIFFS.remove("/device_state.json");
-        
-        // Set defaults
-        RandomPlayOn = false;
-        globalVolume = 22;
-        currentMelody = 1;
-        currentAtos = 1;
-        currentDoorChime = 1;
-        currentVA = 1;
-        playbackMode = "selected";
-        
-        // Save default state
-        saveDeviceState();
-        return;
-    }
-
-    // Print current stored values
-    Serial.println(F("\nStored values:"));
-    Serial.printf("Random Play: %s\n", doc["randomPlay"].as<bool>() ? "ON" : "OFF");
-    Serial.printf("Volume: %d\n", doc["volume"].as<int>());
-    
-    // Restore state with careful error handling
-    RandomPlayOn = doc["randomPlay"].isNull() ? false : doc["randomPlay"].as<bool>();
-    globalVolume = doc["volume"].isNull() ? 22 : doc["volume"].as<int>();
-    currentMelody = doc["melody"].isNull() ? 1 : doc["melody"].as<int>();
-    currentAtos = doc["atos"].isNull() ? 1 : doc["atos"].as<int>();
-    currentDoorChime = doc["doorChime"].isNull() ? 1 : doc["doorChime"].as<int>();
-    currentVA = doc["va"].isNull() ? 1 : doc["va"].as<int>();
-
-    // Apply volume
-    myDFPlayer.volume(globalVolume);
-
-    // Safely set playback mode with a default if not present
-    playbackMode = doc["playbackMode"].isNull() ? "selected" : doc["playbackMode"].as<String>();
-    Serial.printf("Playback Mode: %s\n", playbackMode.c_str());
-
-    // If we have station data, restore it
-    if (doc.containsKey("line") && doc.containsKey("station") && doc.containsKey("track")) {
-        String line = doc["line"].isNull() ? "" : doc["line"].as<String>();
-        String station = doc["station"].isNull() ? "" : doc["station"].as<String>();
-        String track = doc["track"].isNull() ? "" : doc["track"].as<String>();
-        
-        Serial.println(F("\nRestoring station selection:"));
-        Serial.printf("Line: %s, Station: %s, Track: %s\n", line.c_str(), station.c_str(), track.c_str());
-        
-        // Safety check - verify all paths exist in the config before accessing
-        if (configLoaded && line.length() > 0 && station.length() > 0 && track.length() > 0) {
-            // Check if line exists
-            if (!stationConfig["lines"].containsKey(line)) {
-                Serial.println(F("Line not found in config, using defaults"));
-                return;
-            }
-            
-            // Check if station exists
-            if (!stationConfig["lines"][line]["stations"].containsKey(station)) {
-                Serial.println(F("Station not found in config, using defaults"));
-                return;
-            }
-            
-            // Check if track exists
-            if (!stationConfig["lines"][line]["stations"][station]["Trk"].containsKey(track)) {
-                Serial.println(F("Track not found in config, using defaults"));
-                return;
-            }
-            
-            // Now we know all paths exist, we can safely access them
-            JsonObject stationData = stationConfig["lines"][line]["stations"][station];
-            JsonObject trackData = stationData["Trk"][track];
-            JsonObject style = stationConfig["lines"][line]["style"];
-            
-            // Use updateCurrentStation function for consistency
-            updateCurrentStation(stationData, trackData, style, line.c_str(), station.c_str(), track.c_str());
-            
-            Serial.println(F("\nStation restored successfully"));
-        } else {
-            Serial.println(F("Config not loaded or invalid station data"));
-        }
-    } else {
-        Serial.println("No station selection data found");
-    }
-    
-    Serial.println(F("===========================\n"));
-}
-
-// Add this helper function to avoid code duplication
-void updateCurrentStation(JsonObject stationData, JsonObject trackData, JsonObject style, 
-                        const char* line, const char* station, const char* track) {
-    currentStation.lineCode = stationData["sInfo"]["sC"].as<const char*>();
-    currentStation.stationCodeLine = trackData["Marker"]["LC"].as<const char*>();
-    currentStation.stationNumber = trackData["Marker"]["sNum"].as<const char*>();
-    currentStation.lineMarkerBgColor = style["lineMarkerBgColor"].as<const char*>();
-    currentStation.lineNumberBgColor = style["lineNumberBgColor"].as<const char*>();
-    currentStation.directionBarBgColor = style["directionBarBgColor"].as<const char*>();
-    currentStation.stationNameJa = stationData["sInfo"]["Ja"].as<const char*>();
-    currentStation.stationNameHiragana = stationData["sInfo"]["Hi"].as<const char*>();
-    currentStation.stationNameKo = stationData["sInfo"]["Ko"].as<const char*>();
-    currentStation.stationNameEn = station;
-    currentStation.prevStation = trackData["Dir"]["p"]["Ja"].as<const char*>();
-    currentStation.prevStationEn = trackData["Dir"]["p"]["En"].as<const char*>();
-    currentStation.nextStation = trackData["Dir"]["n"]["Ja"].as<const char*>();
-    currentStation.nextStationEn = trackData["Dir"]["n"]["En"].as<const char*>();
-    currentStation.wardBox = stationData["sInfo"]["wB"].as<const char*>();
-    currentStation.trackKey = track;
-}
-
-void checkSysHealth() {
-    // Memory
-    uint32_t freeHeap = ESP.getFreeHeap();
-    uint32_t totalHeap = ESP.getHeapSize();
-    float heapUsage = 100.0f * (1.0f - ((float)freeHeap / totalHeap));
-    
-    // SPIFFS
-    uint32_t totalBytes = SPIFFS.totalBytes();
-    uint32_t usedBytes = SPIFFS.usedBytes();
-    float spiffsUsage = 100.0f * ((float)usedBytes / totalBytes);
-    
-    // Program Storage
-    uint32_t flashSize = ESP.getFlashChipSize();
-    uint32_t programSize = ESP.getSketchSize();
-    float programUsage = 100.0f * ((float)programSize / flashSize);
-
-    // Print Report
-    Serial.println(F("\n======== System Health ========"));
-    Serial.printf("Heap: %.1f%% used (%u KB free)\n", heapUsage, freeHeap / 1024);
-    Serial.printf("Flash: %.1f%% used (%u KB free)\n", programUsage, (flashSize - programSize) / 1024);
-    Serial.printf("SPIFFS: %.1f%% used (%u KB free)\n", spiffsUsage, (totalBytes - usedBytes) / 1024);
-    Serial.printf("CPU Temp: %.1f°C\n", temperatureRead());
-    Serial.println(F("===============================\n"));
-}
 
 //================================WiFi and Server Setup=============================
 void saveConfigCallback() {shouldSaveConfig = true;}
@@ -413,19 +205,17 @@ const char* PROMPT = "JR-Beru:_$ ";
 String serialCommand = "";
 bool commandComplete = false;
 
-void setup()
-{
+void setup() {
   dfPlayerSerial.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
   Serial.begin(115200);
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   delay(600);
 
-  Serial.println(F("\n"));
   Serial.println(F("\n==================="));
   Serial.println(F(" JR-Beru Booting "));
   Serial.println(F("==================="));
-  Serial.println(F("Firmware Version: " FW_VERSION));
+  Serial.printf_P(PSTR("Firmware Version: %s\n"), FW_VERSION);
 
   // Initialize MP3 player
   Serial.println(F("\nInitializing MP3-Player ... (May take 3~5 seconds)"));
@@ -442,7 +232,7 @@ void setup()
 
   UpdateFileCount();
 
-    // Initialize SPIFFS first
+  // Initialize SPIFFS
   if(!SPIFFS.begin(true)) {
     Serial.println(F("SPIFFS Mount Failed"));
     return;
@@ -450,11 +240,26 @@ void setup()
 
   // Load config and state in the correct order
   loadConfigFilename();
-  loadStationConfig();
-  loadDeviceState();  // This will now have both config and state available
-
-  myDFPlayer.disableLoop();PlayRandomAudio(MelodyFolder,MelodyCount);
   
+  // Make sure station config is loaded first
+  if (!loadStationConfig()) {
+    Serial.println(F("Failed to load station config"));
+  } else {
+    Serial.println(F("Station config loaded successfully"));
+  }
+  
+  // Now load device state which will use the station config
+  loadDeviceState();
+  
+  // Debug output after loading
+  Serial.println(F("After loading device state:"));
+  Serial.printf("Current values - Line: '%s', Station: '%s', Track: '%s'\n", 
+               currentStation.stationCodeLine.c_str(), 
+               currentStation.stationNameEn.c_str(), 
+               currentStation.trackKey.c_str());
+
+  myDFPlayer.disableLoop();
+  PlayRandomAudio(MelodyFolder,MelodyCount);
 
   // Create button handler task on Core 0
   xTaskCreatePinnedToCore(
@@ -466,8 +271,6 @@ void setup()
     NULL,
     0  // runs on core
   );
-
-
 
   // Start WiFi setup
   setupWiFiManager();
@@ -481,10 +284,6 @@ void setup()
   
   // Continue with normal operation regardless of WiFi status
   Serial.println(F("========Boot up Completed!========"));
-   
-  if (!configLoaded) {
-    loadStationConfig();
-  }
 
   // Initial system health check
   checkSysHealth();
@@ -492,21 +291,21 @@ void setup()
   // Create a queue for sequence operations
   sequenceQueue = xQueueCreate(1, sizeof(bool));
 
-  // Create a task for sequence handling 
-  xTaskCreatePinnedToCore(
-    sequenceHandlerTask,
-    "sequenceHandler",
-    8192,  // stack size
-    NULL,
-    1,
-    NULL,
-    CONFIG_ASYNC_TCP_RUNNING_CORE
-  );
+    // Create a task for sequence handling 
+    xTaskCreatePinnedToCore(
+      sequenceHandlerTask,
+      "sequenceHandler",
+      8192,  // stack size
+      NULL,
+      1,
+      NULL,
+      CONFIG_ASYNC_TCP_RUNNING_CORE
+    );
 
-  // Initialize serial shell
-  Serial.println(F("\nWelcome to JR-Beru Shell. Type 'help' for available commands."));
-   Serial.println(F("Firmware Version: " FW_VERSION));Serial.println("");
-  Serial.print(PROMPT);
+    // Initialize serial shell
+    Serial.println(F("\nWelcome to JR-Beru Shell. Type 'help' for available commands."));
+     Serial.println(F("Firmware Version: " FW_VERSION));Serial.println("");
+    Serial.print(PROMPT);
 }
 
 
@@ -933,7 +732,7 @@ void handleRoot() {
           "      }"
           "      return response;"
           "    })"
-          "    .then(() => loadConfig())"
+          "    .then(() => forceConfigReload())"
           "    .catch(e => {"
           "      console.error('Error:', e);"
           "      alert('Upload failed: ' + e.message);"
@@ -947,7 +746,9 @@ void handleRoot() {
           "  api('/deleteConfig')"
           "    .then(r => r.ok ? r.text() : Promise.reject('Status: ' + r.status))"
           "    .then(() => {"
-          "      loadConfig();"
+          "      return forceConfigReload();"
+          "    })"
+          "    .then(() => {"
           "      alert('Configuration deleted successfully');"
           "    })"
           "    .catch(e => alert('Failed to delete configuration: ' + e));"
@@ -956,36 +757,70 @@ void handleRoot() {
           // Cached config and loading
           "let cachedConfig = null;"
           "function loadConfig() {"
+            // Clear the cached config first
+          "  cachedConfig = null;"
+            // Reset all selectors to initial state
+          "  $('lineSelect').innerHTML = '<option>Select Line</option>';"
+          "  $('stationSelect').innerHTML = '<option>Select Station</option>';"
+          "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
           "  Promise.all(["
           "    api('/getCurrentConfig').then(r => r.json()),"
           "    api('/getStationConfig').then(r => r.json())"
           "  ]).then(([configInfo, config]) => {"
           "    $('configName').textContent = configInfo.filename;"
-          "    cachedConfig = config;"
+              // Update cached config with fresh data
+          "    cachedConfig = JSON.parse(JSON.stringify(config));"
           "    $('playMode').value = configInfo.playbackMode;"
           "    if (configInfo.volume !== undefined) {"
-          "      const volumeControl = $('volume');"
-          "      const volumeDisplay = document.getElementById('volumeDisplay');"
+          "      const volumeControl = $('volumeControl');"
           "      if (volumeControl) volumeControl.value = configInfo.volume;"
-          "      if (volumeDisplay) volumeDisplay.textContent = configInfo.volume;"
+          "      const volumeValue = $('volumeValue');"
+          "      if (volumeValue) volumeValue.textContent = configInfo.volume;"
           "    }"
           "    populateSelector('lineSelect', config.lines, null);"
           "    return api('/getCurrentSelections').then(r => r.json());"
           "  }).then(sel => {"
           "    if (!sel) return;"
-          "    updateSelectors(sel, cachedConfig);"
           "    if (sel.line && sel.station && sel.track) {"
-          "      updateStationSign();"
-         // "      setTimeout(updateLineMarkerPosition, 200);"
+          "      $('lineSelect').value = sel.line;"
+          "      if (cachedConfig?.lines[sel.line]) {"
+          "        populateSelector('stationSelect', cachedConfig.lines[sel.line].stations, sel.station);"
+          "        $('stationSelect').value = sel.station;"
+          "        const stationData = cachedConfig.lines[sel.line].stations[sel.station];"
+          "        if (stationData?.t && stationData.t.length > 0) {"
+          "          const tracks = {};"
+          "          stationData.t.forEach(trackArray => {"
+          "            if (trackArray && trackArray.length > 0) {"
+          "              const trackKey = trackArray[0];"
+          "              tracks[trackKey] = trackKey;"
+          "            }"
+          "          });"
+          "          populateSelector('trackSelect', tracks, sel.track);"
+          "          $('trackSelect').value = sel.track;"
+          "          updateStationSign();"
+"        }"
+"      }"
           "    }"
-          "  }).catch(e => console.error('Error:', e));"
+          "  }).catch(e => {"
+          "    console.error('Error loading config:', e);"
+              // Reset cached config on error
+          "    cachedConfig = null;"
+          "  });"
           "}"
-
-       // Populate selectors
+          
+          // Add a function to force config reload
+          "function forceConfigReload() {"
+          "  cachedConfig = null;"
+          "  return loadConfig();"
+          "}"
+          
+          // Populate selectors
           "function populateSelector(id, items, selected) {"
           "  const sel = $(id);"
+          "  if (!sel) return;"
           "  sel.innerHTML = '<option>' + sel.options[0].text + '</option>';"
-          "  Object.keys(items || {}).forEach(item => {"
+          "  const keys = Object.keys(items || {});"
+          "  keys.forEach(item => {"
           "    const opt = document.createElement('option');"
           "    opt.value = opt.textContent = item;"
           "    opt.selected = item === selected;"
@@ -995,14 +830,34 @@ void handleRoot() {
           
           // Update selectors with selection data
           "function updateSelectors(sel, config) {"
-          "  if (!config) return;"
+          "  console.log('updateSelectors called with:', sel);"
+          "  if (!config) {"
+          "    console.log('No config provided, returning');"
+          "    return;"
+          "  }"
           "  const line = config?.lines[sel.line];"
           "  const station = line?.stations[sel.station];"
+          "  console.log('Line:', line ? 'found' : 'not found', 'Station:', station ? 'found' : 'not found');"
           "  const lsel = $('lineSelect');"
           "  const lines = Array.from(lsel.options).find(o => o.value === sel.line);"
           "  if (lines) lines.selected = true;"
           "  if (line) populateSelector('stationSelect', line.stations, sel.station);"
-          "  if (station) populateSelector('trackSelect', station.Trk, sel.track);"
+          "  if (station && station.t) {"
+          "    console.log('Station has t array with length:', station.t.length);"
+          "    const tracks = {};"
+          "    station.t.forEach(trackArray => {"
+          "      if (trackArray && trackArray.length > 0) {"
+          "        const trackKey = trackArray[0];"
+          "        tracks[trackKey] = trackKey;"
+          "        console.log('Added track key:', trackKey);"
+          "      }"
+          "    });"
+          "    console.log('Populating track selector with keys:', Object.keys(tracks));"
+          "    populateSelector('trackSelect', tracks, sel.track);"
+          "    console.log('Track selector populated, selected track:', sel.track);"
+          "  } else {"
+          "    console.log('Station does not have t array or is null');"
+          "  }"
           "}"
 
           // Update station selector
@@ -1025,8 +880,15 @@ void handleRoot() {
           "  const station = $('stationSelect').value;"
           "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
           "  if (line && station && cachedConfig?.lines[line]?.stations[station]) {"
-          "    const tracks = cachedConfig.lines[line].stations[station].Trk;"
-          "    if (tracks) {"
+          "    const stationData = cachedConfig.lines[line].stations[station];"
+          "    if (stationData.t && stationData.t.length > 0) {"
+          "      const tracks = {};"
+          "      stationData.t.forEach(trackArray => {"
+          "        if (trackArray && trackArray.length > 0) {"
+          "          const trackKey = String(trackArray[0]);"
+          "          tracks[trackKey] = trackKey;"
+          "        }"
+          "      });"
           "      populateSelector('trackSelect', tracks);"
           "      if ($('trackSelect').options.length > 1) {"
           "        $('trackSelect').selectedIndex = 1;"
@@ -1037,15 +899,35 @@ void handleRoot() {
           "}"
 
           // Update station sign
+          "let updateInProgress = false;"
           "function updateStationSign() {"
-          "  const lineSelect = document.getElementById('lineSelect');"
-          "  const stationSelect = document.getElementById('stationSelect');"
-          "  const trackSelect = document.getElementById('trackSelect');"
-          "  const line = lineSelect.value;"
-          "  const station = stationSelect.value;"
-          "  const track = trackSelect.value;"
+          "  if (updateInProgress) return;"
+          "  updateInProgress = true;"
+          
+          "  const line = $('lineSelect').value;"
+          "  const station = $('stationSelect').value;"
+          "  const track = $('trackSelect').value;"
 
-          "  if (!line || !station || !track || track === 'Select Track') return;"
+          "  if (!line || !station || !track || track === 'Select Track') {"
+          "    updateInProgress = false;"
+          "    return;"
+          "  }"
+
+          "  const requiredElements = ["
+          "    '.line-marker', '.station-number-container', '.station-indicator', '.direction-bar',"
+          "    '.staName-ja', '.staName-hiragana', '.staName-ko', '.ward-box',"
+          "    '.line-code-akb', '.line-code-jy', '.line-number',"
+          "    '.direction-left .direction-station', '.direction-right .direction-station',"
+          "    '.staName-en-left', '.staName-en-center', '.staName-en-right'"
+          "  ];"
+          
+          "  if (!requiredElements.every(selector => document.querySelector(selector))) {"
+          "    setTimeout(() => {"
+          "      updateInProgress = false;"
+          "      updateStationSign();"
+          "    }, 100);"
+          "    return;"
+          "  }"
 
           "  fetch(`/updateStationSign?line=${line}&station=${station}&track=${track}`)"
           "    .then(response => response.ok ? response : Promise.reject('Failed to update'))"
@@ -1053,8 +935,21 @@ void handleRoot() {
           "      if (!cachedConfig) return;"
 
           "      const stationData = cachedConfig.lines[line].stations[station];"
-          "      const trackData = stationData.Trk[track];"
+          "      if (!stationData) return;"
+          
           "      const style = cachedConfig.lines[line].style;"
+          
+          "      let trackData = null;"
+          "      if (stationData.t && stationData.t.length > 0) {"
+          "        for (const trackArray of stationData.t) {"
+          "          if (String(trackArray[0]) === String(track)) {"
+          "            trackData = trackArray;"
+          "            break;"
+          "          }"
+          "        }"
+          "      }"
+
+          "      if (!trackData) return;"
 
           // Background color updates
           "      document.querySelector('.line-marker').style.backgroundColor = style.lineMarkerBgColor;"
@@ -1062,42 +957,75 @@ void handleRoot() {
           "      document.querySelector('.station-indicator').style.backgroundColor = style.lineNumberBgColor;"
           "      document.querySelector('.direction-bar').style.backgroundColor = style.directionBarBgColor;"
 
-                // Update line marker position
+          // Update line marker position
           "      setTimeout(updateLineMarkerPosition, 10);"
-                // Audio value updates
-          "      document.getElementById('melody').value = trackData.audio.melody;"
-          "      document.getElementById('atos').value = trackData.audio.atos;"
-          "      document.getElementById('doorchime').value = trackData.audio.dC;"
-          "      document.getElementById('platform').value = trackData.audio.va;"
-
-                // Text updates
-          "      const stInfo = stationData.sInfo || {};"
-          "      const lineMarker = trackData.Marker || {};"
-          "      const direction = trackData.Dir || {};"
-          "      const prev = direction.p || {};"
-          "      const next = direction.n || {};"
           
-          "      document.querySelector('.staName-ja').textContent = stInfo.Ja || '';"
-          "      document.querySelector('.staName-hiragana').textContent = stInfo.Hi || '';"
-          "      document.querySelector('.staName-ko').textContent = stInfo.Ko || '';"
-          "      document.querySelector('.staName-en-left').textContent = prev.En || '';"
-          "      document.querySelector('.staName-en-center').textContent = station;"
-          "      document.querySelector('.staName-en-right').textContent = next.En || '';"
-          "      document.querySelector('.direction-left').textContent = prev.Ja || '';"
-          "      document.querySelector('.direction-right').textContent = next.Ja || '';"
-          "      document.querySelector('.line-code-akb').textContent = stInfo.sC || '';"
-          "      document.querySelector('.line-code-jy').textContent = lineMarker.LC || '';"
-          "      document.querySelector('.line-number').textContent = lineMarker.sNum || '';"
-          "      document.querySelector('.ward-box').textContent = stInfo.wB || '';"
+          // Audio value updates
+          "      if ($('melody')) $('melody').value = trackData[3] && trackData[3][0] ? trackData[3][0] : 1;"
+          "      if ($('atos')) $('atos').value = trackData[3] && trackData[3][1] ? trackData[3][1] : 1;"
+          "      if ($('doorchime')) $('doorchime').value = trackData[3] && trackData[3][2] ? trackData[3][2] : 1;"
+          "      if ($('platform')) $('platform').value = trackData[3] && trackData[3][3] ? trackData[3][3] : 1;"
 
-                // Update config values
+          // Text updates from i array
+          "      const stInfo = stationData.i || [];"
+          "      document.querySelector('.staName-ja').textContent = stInfo[1] || '';"
+          "      document.querySelector('.staName-hiragana').textContent = stInfo[2] || '';"
+          "      document.querySelector('.staName-ko').textContent = stInfo[3] || '';"
+          "      document.querySelector('.ward-box').textContent = stInfo[4] || '';"
+
+          // Line code and station number
+          "      document.querySelector('.line-code-akb').textContent = stInfo[0] || '';"
+          "      document.querySelector('.line-code-jy').textContent = trackData[1] || '';"
+          "      document.querySelector('.line-number').textContent = trackData[2] || '';"
+
+          // Direction information
+          "      document.querySelector('.direction-left .direction-station').textContent = "
+          "        trackData[4] && trackData[4][0] ? trackData[4][0] : '';"
+          "      document.querySelector('.direction-right .direction-station').textContent = "
+          "        trackData[5] && trackData[5][0] ? trackData[5][0] : '';"
+
+          // Station names in English
+          "      document.querySelector('.staName-en-left').textContent = "
+          "        trackData[4] && trackData[4][1] ? trackData[4][1] : '';"
+          "      document.querySelector('.staName-en-center').textContent = station;"
+          "      document.querySelector('.staName-en-right').textContent = "
+          "        trackData[5] && trackData[5][1] ? trackData[5][1] : '';"
+
+          // Update config values
           "      updateConfig();"
           "    })"
-          "    .catch(error => console.error('Error:', error));"
+          "    .catch(error => {"
+          "      setTimeout(() => updateStationSign(), 500);"
+          "    })"
+          "    .finally(() => {"
+          "      updateInProgress = false;"
+          "    });"
           "}"
 
           "$('configFile').addEventListener('change', uploadConfig);"
           "loadConfig();"
+
+          // Add explicit event listeners for selectors
+          "document.addEventListener('DOMContentLoaded', function() {"
+          "  if ($('lineSelect')) {"
+          "    $('lineSelect').addEventListener('change', function() {"
+          "      updateStationSelect();"
+          "    });"
+          "  }"
+          
+          "  if ($('stationSelect')) {"
+          "    $('stationSelect').addEventListener('change', function() {"
+          "      updateTrackSelect();"
+          "      updateStationSign();" // Add immediate update
+          "    });"
+          "  }"
+          
+          "  if ($('trackSelect')) {"
+          "    $('trackSelect').addEventListener('change', function() {"
+          "      updateStationSign();"
+          "    });"
+          "  }"
+          "});"
 
 // Poll station changes, update UI 
 "function pollStationChanges() {"
@@ -1115,10 +1043,27 @@ void handleRoot() {
 "          populateSelector('stationSelect', cachedConfig.lines[data.line].stations, data.station);"
 "        }"
 "        $('stationSelect').value = data.station;"
-"        const tracks = cachedConfig.lines[data.line].stations[data.station].Trk;"
-"        populateSelector('trackSelect', tracks, data.track);"
-"        $('trackSelect').value = data.track;"
-"        updateStationSign();" // Update the display
+"        const stationData = cachedConfig.lines[data.line].stations[data.station];"
+"        if (stationData.t && stationData.t.length > 0) {"
+"          const tracks = {};"
+"          stationData.t.forEach(trackArray => {"
+"            if (trackArray && trackArray.length > 0) {"
+"              const trackKey = trackArray[0];"
+"              tracks[trackKey] = trackKey;"
+"            }"
+"          });"
+"          populateSelector('trackSelect', tracks, data.track);"
+"          $('trackSelect').value = data.track;"
+"          console.log('Calling updateStationSign from pollStationChanges');"
+          // First make sure the server has the latest selection
+"          fetch(`/updateStationSign?line=${data.line}&station=${data.station}&track=${data.track}`)"
+"            .then(response => response.ok ? response : Promise.reject('Failed to update'))"
+"            .then(() => {"
+"              console.log('Server updated, now updating UI');"
+"              updateStationSign();"
+"            })"
+"            .catch(error => console.error('Error updating station sign:', error));"
+"        }"
 "      }"
 "    })"
 "    .catch(e => console.error('Error checking station changes:', e));"
@@ -1295,40 +1240,31 @@ void toggleRandomPlay() {
 
 void playAudio(int folder, int currentTrack, int totalTracks) {
  DonePlaying = false;
-    if (RandomPlayOn) {
-        PlayRandomAudio(folder, totalTracks);
-    } else {
-        PlayCurrentAudio(folder, currentTrack);
-    }
+    myDFPlayer.playFolder(folder, RandomPlayOn ? random(1, totalTracks + 1) : currentTrack);
+    Serial.printf_P(PSTR("Playing %s audio %d/%d from folder %d\n"), 
+                   RandomPlayOn ? "random" : "current", 
+                   RandomPlayOn ? random(1, totalTracks + 1) : currentTrack,
+                   totalTracks, folder);
+    delay(100); // Waiting for mp3 board
 }
 
+// Simplified audio handlers using the consolidated playAudio function
 void handlePlayMelody() { playAudio(MelodyFolder, currentMelody, MelodyCount); }
 void handlePlayAtos() { playAudio(AtosFolder, currentAtos, AtosCount); }
 void handlePlayVA() { playAudio(VAFolder, currentVA, VACount); }
 
-/**
- * Handle door chime playback and sequence triggering
- * Called regularly from the main loop
- */
+// Optimized door chime function
 void DoorChime() {
-  // Only proceed if both flags are set
-  if (!DonePlaying || !AtosLastPlayed) {
-    return;
-  }
-  
-  Serial.println(F("\n====Door Chime playing===="));
-  
-  // Reset flags before playing audio
-  DonePlaying = false;
-  AtosLastPlayed = false;
-  
-  // Play the door chime
-  PlayCurrentAudio(DoorChimeFolder, currentDoorChime);
-  
-  // Check if we're in sequence mode to advance to next station
-  if (playbackMode == "sequence" && !sequenceInProgress) {
-    triggerSequencePlay();
-  }
+    if (!DonePlaying || !AtosLastPlayed) return;
+    
+    Serial.println(F("\n====Door Chime playing===="));
+    DonePlaying = AtosLastPlayed = false;
+    
+    playAudio(DoorChimeFolder, currentDoorChime, DoorChimeCount);
+    
+    if (playbackMode == "sequence" && !sequenceInProgress) {
+        triggerSequencePlay();
+    }
 }
 
 /**
@@ -1593,44 +1529,15 @@ void setupWebServer() {
         // Create and load default config
         createDefaultConfig();
         loadStationConfig();
-        
-        // Get first available options from default config
-        if (configLoaded) {
-            String firstLine;
-            JsonObject lines = stationConfig["lines"];
-            for (JsonPair line : lines) {
-                firstLine = line.key().c_str();
-                break;
-            }
-            
-            String firstStation;
-            JsonObject stations = lines[firstLine]["stations"];
-            for (JsonPair station : stations) {
-                firstStation = station.key().c_str();
-                break;
-            }
-            
-            String firstTrack;
-            JsonObject tracks = stations[firstStation]["Trk"];
-            for (JsonPair track : tracks) {
-                firstTrack = track.key().c_str();
-                break;
-            }
-            
-            // Update station sign with first available options
-            JsonObject stationData = stationConfig["lines"][firstLine]["stations"][firstStation];
-            JsonObject trackData = stationData["Trk"][firstTrack];
-            JsonObject style = stationConfig["lines"][firstLine]["style"];
-            
-            updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());
-            saveDeviceState();  // Save this as the current state
-        }
+        selectFirstAvailableOptions();
+        saveDeviceState();
         
         server.send(200, "text/plain", "Config deleted");
     } else {
         server.send(500, "text/plain", "Failed to delete file");
     }
   });
+
 
   server.on("/getStationConfig", HTTP_GET, []() {
     if (!configLoaded) loadStationConfig();
@@ -1650,38 +1557,24 @@ void setupWebServer() {
         return;
     }
 
-    JsonObject stationData = stationConfig["lines"][line]["stations"][station];
-    JsonObject trackData = stationData["Trk"][track];
-    JsonObject style = stationConfig["lines"][line]["style"];
-    
-    if (!stationData || !trackData) {
+    JsonObject stationData;
+    JsonObject style;
+    if (!getStationData(line, station, stationData, style)) {
         server.send(400, "text/plain", "Invalid station data");
         return;
     }
 
-    // Update currentStation struct
-    currentStation.lineCode = stationData["sInfo"]["sC"].as<const char*>();
-    currentStation.stationCodeLine = trackData["Marker"]["LC"].as<const char*>();
-    currentStation.stationNumber = trackData["Marker"]["sNum"].as<const char*>();
-    currentStation.lineMarkerBgColor = style["lineMarkerBgColor"].as<const char*>();
-    currentStation.lineNumberBgColor = style["lineNumberBgColor"].as<const char*>();
-    currentStation.directionBarBgColor = style["directionBarBgColor"].as<const char*>();
-    currentStation.stationNameJa = stationData["sInfo"]["Ja"].as<const char*>();
-    currentStation.stationNameHiragana = stationData["sInfo"]["Hi"].as<const char*>();
-    currentStation.stationNameKo = stationData["sInfo"]["Ko"].as<const char*>();
-    currentStation.stationNameEn = station;
-    currentStation.prevStation = trackData["Dir"]["p"]["Ja"].as<const char*>();
-    currentStation.prevStationEn = trackData["Dir"]["p"]["En"].as<const char*>();
-    currentStation.nextStation = trackData["Dir"]["n"]["Ja"].as<const char*>();
-    currentStation.nextStationEn = trackData["Dir"]["n"]["En"].as<const char*>();
-    currentStation.wardBox = stationData["sInfo"]["wB"].as<const char*>();
-    currentStation.trackKey = track;
+    // Create a temporary track object
+    StaticJsonDocument<512> trackDoc;
+    JsonObject trackData = trackDoc.to<JsonObject>();
     
-    // Update audio settings
-    currentMelody = trackData["audio"]["melody"];
-    currentAtos = trackData["audio"]["atos"];
-    currentDoorChime = trackData["audio"]["dC"];
-    currentVA = trackData["audio"]["va"];
+    if (!findTrackData(stationData, track, trackData)) {
+        server.send(404, "text/plain", "Track not found");
+        return;
+    }
+
+    // Update currentStation with all values
+    updateCurrentStation(stationData, trackData, style, line.c_str(), station.c_str(), track.c_str());
     
     saveDeviceState();
     server.send(200, "text/plain", "Station sign updated");
@@ -1711,6 +1604,29 @@ void setupWebServer() {
     
     String jsonResponse;
     serializeJson(doc, jsonResponse);
+    server.send(200, "application/json", jsonResponse);
+  });
+
+  // Add endpoint to get current station
+  server.on("/getCurrentStation", HTTP_GET, []() {
+    // Create a JSON object with current station information
+    StaticJsonDocument<200> doc;
+    
+    // Debug output to serial
+    Serial.println(F("getCurrentStation endpoint called"));
+    Serial.printf("Current values - Line: '%s', Station: '%s', Track: '%s'\n", 
+                 currentStation.stationCodeLine.c_str(), 
+                 currentStation.stationNameEn.c_str(), 
+                 currentStation.trackKey.c_str());
+    
+    // Simply return the current values without any conditions
+    doc["line"] = currentStation.stationCodeLine;
+    doc["station"] = currentStation.stationNameEn;
+    doc["track"] = currentStation.trackKey;
+    
+    String jsonResponse;
+    serializeJson(doc, jsonResponse);
+    Serial.printf("Sending response: %s\n", jsonResponse.c_str());
     server.send(200, "application/json", jsonResponse);
   });
 
@@ -1800,94 +1716,289 @@ void buttonHandlerTask(void * parameter) {
 
 
 
+    //===============================================================
+    // Save Device State
+    //===============================================================
+
+void saveDeviceState() {
+    StaticJsonDocument<512> doc;
+    
+    doc["randomPlay"] = RandomPlayOn;
+    doc["volume"] = globalVolume;
+    doc["melody"] = currentMelody;
+    doc["atos"] = currentAtos;
+    doc["doorChime"] = currentDoorChime;
+    doc["va"] = currentVA;
+    doc["line"] = currentStation.stationCodeLine;
+    doc["station"] = currentStation.stationNameEn;
+    doc["track"] = currentStation.trackKey;
+    doc["playbackMode"] = playbackMode; // Add playback mode to saved state
+
+    File file = SPIFFS.open("/device_state.json", "w");
+    if (file) {
+        serializeJson(doc, file);
+        file.close();
+    }
+}
+
+//===============================================================
+// Load Device State
+//===============================================================
+
+void loadDeviceState() {
+    Serial.println(F("\n=== Loading Device State ==="));
+    
+    // Initialize with default values first
+    if (!configLoaded) {
+        loadStationConfig();
+    }
+    
+    // Set default playback mode
+    playbackMode = "selected";
+    
+    // If no saved state file exists, set defaults from config
+    if (!SPIFFS.exists("/device_state.json")) {
+        Serial.println(F("No saved state found - using defaults from config"));
+      if (configLoaded) {
+            // Get the first line
+          String firstLine;
+          JsonObject lines = stationConfig["lines"];
+          for (JsonPair line : lines) {
+              firstLine = line.key().c_str();
+              break;
+          }
+          
+            if (!firstLine.isEmpty()) {
+                // Get the first station
+          String firstStation;
+          JsonObject stations = lines[firstLine]["stations"];
+          for (JsonPair station : stations) {
+              firstStation = station.key().c_str();
+              break;
+          }
+          
+                if (!firstStation.isEmpty()) {
+                    JsonObject stationData;
+                    JsonObject style;
+                    if (!getStationData(firstLine, firstStation, stationData, style)) {
+                        return;
+                    }
+                    
+                    // Create a temporary track object
+                    StaticJsonDocument<512> trackDoc;
+                    JsonObject trackData = trackDoc.to<JsonObject>();
+                    String firstTrack;
+                    
+                    if (!getFirstTrackData(stationData, firstTrack, trackData)) {
+                        return;
+                    }
+                    
+                    // Update currentStation with default values
+          updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());
+                    saveDeviceState();  // Save these defaults
+                    
+                    Serial.println(F("Default station set from config"));
+                    return;
+                }
+            }
+        }
+        return;
+    }
+
+    // Try to open the file
+    File file = SPIFFS.open("/device_state.json", "r");
+    if (!file) {
+        Serial.println(F("Failed to open device state file"));
+        playbackMode = "selected"; // Default value
+        return;
+    }
+
+    // Read the file and handle potential errors
+    String jsonStr = file.readString();
+    file.close();
+    
+    if (jsonStr.length() == 0) {
+        Serial.println(F("Empty device state file"));
+        playbackMode = "selected";
+        return;
+    }
+
+    // Try to parse the JSON with extra error handling
+    StaticJsonDocument<512> doc;
+    DeserializationError error = deserializeJson(doc, jsonStr);
+
+    if (error) {
+        Serial.print("Failed to parse device state: ");
+        Serial.println(error.c_str());
+        Serial.println("Resetting to defaults");
+        
+        // Delete corrupted file and create a new one with defaults
+        SPIFFS.remove("/device_state.json");
+        
+        // Set defaults
+        RandomPlayOn = false;
+        globalVolume = 22;
+        currentMelody = 1;
+        currentAtos = 1;
+        currentDoorChime = 1;
+        currentVA = 1;
+        playbackMode = "selected";
+        
+        // Save default state
+        saveDeviceState();
+        return;
+    }
+
+    // Print current stored values
+    Serial.println(F("\nStored values:"));
+    Serial.printf("Random Play: %s\n", doc["randomPlay"].as<bool>() ? "ON" : "OFF");
+    Serial.printf("Volume: %d\n", doc["volume"].as<int>());
+    
+    // Restore state with careful error handling
+    RandomPlayOn = doc["randomPlay"].isNull() ? false : doc["randomPlay"].as<bool>();
+    globalVolume = doc["volume"].isNull() ? 22 : doc["volume"].as<int>();
+    currentMelody = doc["melody"].isNull() ? 1 : doc["melody"].as<int>();
+    currentAtos = doc["atos"].isNull() ? 1 : doc["atos"].as<int>();
+    currentDoorChime = doc["doorChime"].isNull() ? 1 : doc["doorChime"].as<int>();
+    currentVA = doc["va"].isNull() ? 1 : doc["va"].as<int>();
+
+    // Apply volume
+    myDFPlayer.volume(globalVolume);
+
+    // Safely set playback mode with a default if not present
+    playbackMode = doc["playbackMode"].isNull() ? "selected" : doc["playbackMode"].as<String>();
+    Serial.printf("Playback Mode: %s\n", playbackMode.c_str());
+
+    // If we have station data, restore it
+    if (doc.containsKey("line") && doc.containsKey("station") && doc.containsKey("track")) {
+        String line = doc["line"].isNull() ? "" : doc["line"].as<String>();
+        String station = doc["station"].isNull() ? "" : doc["station"].as<String>();
+        String track = doc["track"].isNull() ? "" : doc["track"].as<String>();
+        
+        // Only attempt to restore if we have valid data
+        if (line.length() > 0 && station.length() > 0 && track.length() > 0) {
+            Serial.println(F("\nRestoring station selection:"));
+            Serial.printf("Line: %s, Station: %s, Track: %s\n", line.c_str(), station.c_str(), track.c_str());
+            
+            // Safety check - verify all paths exist in the config before accessing
+            if (configLoaded) {
+                JsonObject stationData;
+                JsonObject style;
+                if (!getStationData(line, station, stationData, style)) {
+                    Serial.println(F("Invalid station data in saved state"));
+                    return;
+                }
+                
+                // Create a temporary track object
+                StaticJsonDocument<512> trackDoc;
+                JsonObject trackData = trackDoc.to<JsonObject>();
+                
+                if (!findTrackData(stationData, track, trackData)) {
+                    Serial.println(F("Track not found in saved state"));
+                    return;
+                }
+                
+                // Update currentStation with the loaded values
+                updateCurrentStation(stationData, trackData, style, line.c_str(), station.c_str(), track.c_str());
+                Serial.println(F("Station restored successfully"));
+            } else {
+                Serial.println(F("Config not loaded, cannot restore station"));
+            }
+        } else {
+            Serial.println(F("No valid station data in saved state"));
+        }
+    } else {
+        Serial.println(F("No station data in saved state"));
+    }
+    
+    Serial.println(F("===========================\n"));
+}
+
+
+
+
+
 //===============================================================
 // Validate Json File
 //===============================================================
 
 bool validateJsonFile(const char* filename, String& errorMsg) {
-  if (!SPIFFS.exists(filename)) { //if the file does not exist
-    errorMsg = "File not found"; //set the error message
-    return false; //return false
-  }
-  
-  File file = SPIFFS.open(filename, "r");//open the file
-  if (!file) {
-    errorMsg = "Failed to open file";//set the error message
-    return false; //return false
-  }
-  
-  // Get file size for proper memory allocation
-  size_t fileSize = file.size();
-  Serial.printf("Validating file: %s (%u bytes)\n", filename, fileSize);
-  
-  // Read the entire file content
-  String jsonStr;
-  jsonStr.reserve(fileSize + 1);
-  
-  // Read file in chunks just like in loadStationConfig
-  const size_t BUFFER_SIZE = 1024;//set the buffer size
-  char buffer[BUFFER_SIZE];//set the buffer
-  size_t totalRead = 0;//set the total read
-  
-  while (file.available()) { //while the file is available
-    size_t bytesRead = file.readBytes(buffer, BUFFER_SIZE);//read the bytes
-    jsonStr += String(buffer).substring(0, bytesRead);//add the read data to the json string
+    // Required JSON properties to validate
+    const char* requiredProps[] = {"lines", "style", "stations", "i", "t"};
+    const char* propDescriptions[] = {
+        "'lines' property",
+        "'style' in line config",
+        "'stations' in line config",
+        "'info' property in station data",
+        "'track' property in station data"
+    };
     
-    totalRead += bytesRead;
-    // Print validation progress for large files
-    if (fileSize > 20000 && (totalRead % 20000) < BUFFER_SIZE) {
-      Serial.printf("Validation progress: %u/%u bytes (%.1f%%)\n", 
-                     totalRead, fileSize, (totalRead * 100.0) / fileSize);
-    }
-  }
-  file.close();
-  
-  Serial.println("Checking JSON structure...");
-  
-  // Check if the file starts with a JSON object
-  if (!jsonStr.startsWith("{")) { //if the json string is not a brace
-    errorMsg = "Invalid format (not a JSON file)"; //set the error message
-    return false; //return false
-  }
-  
-  // Check for balanced braces
-  int braceCount = 0;//set the brace count
-  for (size_t i = 0; i < jsonStr.length(); i++) { //for the length of the json string
-    if (jsonStr[i] == '{') { //if the json string is a brace
-      braceCount++; //increment the brace count
-    } else if (jsonStr[i] == '}') { //if the json string is a brace
-      braceCount--; //decrement the brace count
+    if (!SPIFFS.exists(filename)) {
+        errorMsg = "File not found";
+        return false;
     }
     
-    // If braceCount goes negative, we have more closing braces than opening
-    if (braceCount < 0) {
-      errorMsg = "Invalid format (more closing braces than opening)";
-      return false;
+    File file = SPIFFS.open(filename, "r");
+    if (!file) {
+        errorMsg = "Failed to open file";
+        return false;
     }
-  }
-  
-  // After counting all braces, if count isn't zero, we're missing some braces
-  if (braceCount != 0) {
-    errorMsg = "Invalid format (missing " + String(braceCount) + " closing braces)";
-    return false;
-  }
-  
-  // Check for required Line, style and stations properties to see if they exist
-  if (jsonStr.indexOf("\"lines\"") == -1) {
-    errorMsg = "Missing 'lines' property";
-    return false;
-  }
-  if (jsonStr.indexOf("\"style\"") == -1) {
-    errorMsg = "Missing 'style' in line config";
-    return false;
-  }
-  if (jsonStr.indexOf("\"stations\"") == -1) {
-    errorMsg = "Missing 'stations' in line config";
-    return false;
-  }
-  
-  Serial.println("File validation successful");
-  return true;
+    
+    size_t fileSize = file.size();
+    Serial.printf("Validating file: %s (%u bytes)\n", filename, fileSize);
+    
+    String jsonStr;
+    jsonStr.reserve(fileSize + 1);
+    
+    // Read file in chunks
+    const size_t BUFFER_SIZE = 1024;
+    char buffer[BUFFER_SIZE];
+    size_t totalRead = 0;
+    
+    while (file.available()) {
+        size_t bytesRead = file.readBytes(buffer, BUFFER_SIZE);
+        jsonStr += String(buffer).substring(0, bytesRead);
+        
+        totalRead += bytesRead;
+        if (fileSize > 20000 && (totalRead % 20000) < BUFFER_SIZE) {
+            Serial.printf("Validation progress: %u/%u bytes (%.1f%%)\n", 
+                        totalRead, fileSize, (totalRead * 100.0) / fileSize);
+        }
+    }
+    file.close();
+    
+    // Basic JSON structure validation
+    if (!jsonStr.startsWith("{")) {
+        errorMsg = "Invalid format (not a JSON file)";
+        return false;
+    }
+    
+    // Check for balanced braces
+    int braceCount = 0;
+    for (char c : jsonStr) {
+        if (c == '{') braceCount++;
+        else if (c == '}') braceCount--;
+        if (braceCount < 0) {
+            errorMsg = "Invalid format (more closing braces than opening)";
+            return false;
+        }
+    }
+    
+    if (braceCount != 0) {
+        errorMsg = "Invalid format (missing " + String(braceCount) + " closing braces)";
+        return false;
+    }
+    
+    // Check required properties
+    for (size_t i = 0; i < sizeof(requiredProps)/sizeof(requiredProps[0]); i++) {
+        if (jsonStr.indexOf("\"" + String(requiredProps[i]) + "\"") == -1) {
+            errorMsg = "Missing " + String(propDescriptions[i]);
+            return false;
+        }
+    }
+    
+    Serial.println("File validation successful");
+    return true;
 }
 
 //===============================================================
@@ -2053,7 +2164,7 @@ void handleFileUpload() {
 //===============================================================
 // Load Station Config Json
 //===============================================================
-void loadStationConfig() {
+bool loadStationConfig() {
   Serial.println(F("\n===== Loading Station Config Json====="));
   if (!SPIFFS.exists("/station_config.json")) {
     Serial.println(F("Config file not found, creating default Station config"));
@@ -2063,7 +2174,7 @@ void loadStationConfig() {
   File file = SPIFFS.open("/station_config.json", "r");
   if (!file) {
     Serial.println(F("Failed to open Station config file"));
-    return;
+    return false;
   }
 
   size_t fileSize = file.size();//get the file size
@@ -2103,7 +2214,7 @@ void loadStationConfig() {
   if (totalBytesRead != fileSize) {
     Serial.printf_P(PSTR("File read incomplete: expected %u bytes, got %u bytes\n"), fileSize, totalBytesRead);
     Serial.println(F("Aborting JSON parsing due to incomplete file read"));
-    return;
+    return false;
   }
 
   Serial.printf("Free heap before parsing: %u\n", ESP.getFreeHeap());
@@ -2133,7 +2244,7 @@ void loadStationConfig() {
     file = SPIFFS.open("/station_config.json", "r");//open the default config file
     if (!file) {
       Serial.println("Failed to open default config");
-    return;
+    return false;
   }
 
     String defaultJsonStr = file.readString();//read the default config file
@@ -2142,53 +2253,64 @@ void loadStationConfig() {
     DeserializationError defaultError = deserializeJson(stationConfig, defaultJsonStr);//deserialize the default config file
     if (defaultError) {
       Serial.printf("Error parsing default config: %s\n", defaultError.c_str());
-      return;
+      return false;
     }
 
     Serial.printf("Recovered from failed config file: %s\n", failedFilename.c_str());
     loadDeviceState();
   configLoaded = true;
-    return;
+    return true;
   }
 
   configLoaded = true;
   Serial.println("Station Config Json Loaded");
   Serial.printf("Final heap after loading: %u\n", ESP.getFreeHeap());
   Serial.println("======================================");
+  return true;
 }
 
 //===============================================================
 // Select First Available Options
 //===============================================================
 void selectFirstAvailableOptions() {
-  String firstLine;
-  JsonObject lines = stationConfig["lines"];
-  for (JsonPair line : lines) {
-    firstLine = line.key().c_str();
-    break;
-  }
-  
-  String firstStation;
-  JsonObject stations = lines[firstLine]["stations"];
-  for (JsonPair station : stations) {
-    firstStation = station.key().c_str();
-    break;
-  }
-  
-  String firstTrack;
-  JsonObject tracks = stations[firstStation]["Trk"];
-  for (JsonPair track : tracks) {
-    firstTrack = track.key().c_str();
-    break;
-  }
-  
-  // Update station sign with first available options
-  JsonObject stationData = stationConfig["lines"][firstLine]["stations"][firstStation];
-  JsonObject trackData = stationData["Trk"][firstTrack];
-  JsonObject style = stationConfig["lines"][firstLine]["style"];
-  
-  updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());
-  saveDeviceState();  // Save this as the current state
+    String firstLine;
+    JsonObject lines = stationConfig["lines"];
+    for (JsonPair line : lines) {
+        firstLine = String(line.key().c_str());
+        break;
+    }
+    
+    String firstStation;
+    JsonObject stations = lines[firstLine]["stations"];
+    for (JsonPair station : stations) {
+        firstStation = String(station.key().c_str());
+        break;
+    }
+    
+    String firstTrack;
+    JsonArray tracks = stations[firstStation]["t"];
+    if (tracks.size() > 0) {
+        firstTrack = tracks[0][0].as<String>();  // Keep as<String>() for array elements
+    } else {
+        return;
+    }
+    
+    JsonObject stationData;
+    JsonObject style;
+    if (!getStationData(firstLine, firstStation, stationData, style)) {
+        return;
+    }
+    
+    // Create a temporary track object
+    StaticJsonDocument<512> trackDoc;
+    JsonObject trackData = trackDoc.to<JsonObject>();
+    if (!findTrackData(stationData, firstTrack, trackData)) {
+        return;
+    }
+    
+    // Update currentStation with default values
+    updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());
+    saveDeviceState();
 }
 
 //===============================================================
@@ -2196,14 +2318,14 @@ void selectFirstAvailableOptions() {
 //===============================================================
 void createDefaultConfig() {
   Serial.println("Creating Default Station Config Json");
-  const char* defaultConfig = R"({"lines":{"JY":{"style":{"lineMarkerBgColor":"#000000","lineNumberBgColor":"#80c241","directionBarBgColor":"#006400"},"stations":{"Akihabara":{"sInfo":{"sC":"AKB","Ja":"秋葉原","Hi":"あきはばら","Ko":"아키하바라","wB":"山"},"Trk":{"track1":{"Marker":{"LC":"JY","sNum":"03"},"audio":{"melody":1,"atos":2,"dC":1,"va":1},"Dir":{"p":{"Ja":"神田","En":"Kanda"},"n":{"Ja":"御徒町","En":"Okachimachi"}}}}}}}}})";
+  // Default Config strings
+  const char* defaultConfig = R"({"lines":{"JY":{"style":{"lineMarkerBgColor":"#000000","lineNumberBgColor":"#80c241","directionBarBgColor":"#006400"},"stations":{"Default Config":{"i":["AKB","秋葉原","あきはばら","System Restored","山"],"t":[[1,"JY","03",[1,1,1,1],["前の駅","Previous Station"],["次の駅","Next Station"]]]}}}}})";
 
   File file = SPIFFS.open("/station_config.json", "w");
   if (!file) {
     Serial.println("Failed to create default config");
     return;
   }
-  
   file.print(defaultConfig);
   file.close();
 }
@@ -2234,40 +2356,29 @@ void loadConfigFilename() {
 // Sequence Play Function
 //===============================================================
 void handleSequencePlay() {
-    // Use the current line from currentStation
-    sequenceLine = currentStation.stationCodeLine;
-    
-    // Get all stations in the current line
-    JsonObject line = stationConfig["lines"][sequenceLine];
-    if (line.isNull()) {
-        Serial.println(F("Error: Invalid line for sequence play"));
-        sequenceInProgress = false;
+    if (sequenceLine.isEmpty()) {
+        Serial.println(F("Error: No line selected for sequence"));
         return;
     }
     
-    JsonObject stations = line["stations"];
+    // Get all stations for the current line
+    JsonObject stations = stationConfig["lines"][sequenceLine]["stations"];
     if (stations.isNull() || stations.size() == 0) {
-        Serial.println(F("Error: No stations found for sequence play"));
-        sequenceInProgress = false;
+        Serial.println(F("Error: No stations found for line"));
         return;
     }
     
-    // Get array of station keys for sequencing
-    int stationCount = 0;
-    String stationKeys[80]; // Assuming max 80 stations per line
+    // Convert to array for indexed access
+    int stationCount = stations.size();
+    String stationKeys[stationCount];
+    int currentIndex = 0;
+    int i = 0;
     
     for (JsonPair station : stations) {
-        stationKeys[stationCount++] = String(station.key().c_str());
+        stationKeys[i++] = station.key().c_str();
     }
     
-    if (stationCount == 0) {
-        Serial.println(F("Error: No stations found in line"));
-        sequenceInProgress = false;
-        return;
-    }
-    
-    // Find current station index or start from 0
-    int currentIndex = 0;
+    // Find current station index
     for (int i = 0; i < stationCount; i++) {
         if (stationKeys[i] == currentStation.stationNameEn) {
             currentIndex = i;
@@ -2279,44 +2390,28 @@ void handleSequencePlay() {
     int nextIndex = (currentIndex + 1) % stationCount;
     String nextStation = stationKeys[nextIndex];
     
-    // Find first track for this station
-    JsonObject stationData = stations[nextStation];
-    if (stationData.isNull()) {
+    // Get station data and validate
+    JsonObject stationData;
+    JsonObject style;
+    if (!getStationData(sequenceLine, nextStation, stationData, style)) {
         Serial.println(F("Error: Invalid station data"));
         sequenceInProgress = false;
         return;
     }
     
-    JsonObject tracks = stationData["Trk"];
-    if (tracks.isNull() || tracks.size() == 0) {
+    // Create a temporary track object
+    StaticJsonDocument<512> trackDoc;
+    JsonObject trackData = trackDoc.to<JsonObject>();
+    String firstTrack;
+    
+    if (!getFirstTrackData(stationData, firstTrack, trackData)) {
         Serial.println(F("Error: No tracks found for station"));
         sequenceInProgress = false;
         return;
     }
     
-    // Get the first track
-    String firstTrack;
-    for (JsonPair track : tracks) {
-        firstTrack = String(track.key().c_str());
-        break;
-    }
-    
     // Update station sign to the next station
-    if (!nextStation.isEmpty() && !firstTrack.isEmpty()) {
-        updateStationForSequence(sequenceLine.c_str(), nextStation.c_str(), firstTrack.c_str());
-        
-        // Play the current audio for the new station
-        PlayCurrentAudio(VAFolder, currentVA);
-        
-        // Store current sequence position
-        sequenceCurrentIndex = nextIndex;
-        
-        Serial.printf_P(PSTR("Sequence advanced to station %s (%d/%d)\n"), 
-                      nextStation.c_str(), nextIndex + 1, stationCount);
-    } else {
-        Serial.println(F("Error: Invalid station or track for sequence"));
-        sequenceInProgress = false;
-    }
+    updateStationForSequence(sequenceLine.c_str(), nextStation.c_str(), firstTrack.c_str());
 }
 
 //===============================================================
@@ -2328,41 +2423,24 @@ void updateStationForSequence(const char* line, const char* station, const char*
         return;
     }
     
-    Serial.printf_P(PSTR("Updating station for sequence: %s - %s - %s\n"), line, station, track);
-    
-    // Get the required objects from the config
-    JsonObject lineObj = stationConfig["lines"][line];
-    if (lineObj.isNull()) {
-        Serial.println(F("Error: Line not found in config"));
+    JsonObject stationData;
+    JsonObject style;
+    if (!getStationData(line, station, stationData, style)) {
+        Serial.println(F("Error: Invalid station data"));
         return;
     }
     
-    JsonObject stationData = lineObj["stations"][station];
-    if (stationData.isNull()) {
-        Serial.println(F("Error: Station not found in config"));
-        return;
-    }
+    // Create a temporary track object
+    StaticJsonDocument<512> trackDoc;
+    JsonObject trackData = trackDoc.to<JsonObject>();
     
-    JsonObject trackData = stationData["Trk"][track];
-    if (trackData.isNull()) {
-        Serial.println(F("Error: Track not found in config"));
-        return;
-    }
-    
-    JsonObject style = lineObj["style"];
-    if (style.isNull()) {
-        Serial.println(F("Error: Style not found in config"));
+    if (!findTrackData(stationData, track, trackData)) {
+        Serial.println(F("Error: Track not found"));
         return;
     }
     
     // Update currentStation with all values
     updateCurrentStation(stationData, trackData, style, line, station, track);
-    
-    // Update audio settings with safe defaults if missing
-    currentMelody = trackData["audio"].containsKey("melody") ? trackData["audio"]["melody"].as<int>() : 1;
-    currentAtos = trackData["audio"].containsKey("atos") ? trackData["audio"]["atos"].as<int>() : 1;
-    currentDoorChime = trackData["audio"].containsKey("dC") ? trackData["audio"]["dC"].as<int>() : 1;
-    currentVA = trackData["audio"].containsKey("va") ? trackData["audio"]["va"].as<int>() : 1;
     
     // Save state and notify UI
     saveDeviceState();
@@ -2441,7 +2519,176 @@ void checkWiFiConnection() {
   }
 }
 
-// Serial shell command
+
+
+//===============================================================
+// Update Current Station
+//===============================================================
+void updateCurrentStation(JsonObject stationData, JsonObject trackData, JsonObject style, 
+                        const char* line, const char* station, const char* track) {
+    // Use the new compact format (i array instead of sInfo object)
+    JsonArray stationInfo = stationData["i"];
+    
+    currentStation.lineCode = stationInfo[0].as<const char*>();              // sC -> i[0]
+    currentStation.stationCodeLine = trackData["Marker"]["LC"].as<const char*>();
+    currentStation.stationNumber = trackData["Marker"]["sNum"].as<const char*>();
+    currentStation.lineMarkerBgColor = style["lineMarkerBgColor"].as<const char*>();
+    currentStation.lineNumberBgColor = style["lineNumberBgColor"].as<const char*>();
+    currentStation.directionBarBgColor = style["directionBarBgColor"].as<const char*>();
+    currentStation.stationNameJa = stationInfo[1].as<const char*>();         // Ja -> i[1]
+    currentStation.stationNameHiragana = stationInfo[2].as<const char*>();   // Hi -> i[2]
+    currentStation.stationNameKo = stationInfo[3].as<const char*>();         // Ko -> i[3]
+    currentStation.stationNameEn = station;
+    currentStation.prevStation = trackData["Dir"]["p"]["Ja"].as<const char*>();
+    currentStation.prevStationEn = trackData["Dir"]["p"]["En"].as<const char*>();
+    currentStation.nextStation = trackData["Dir"]["n"]["Ja"].as<const char*>();
+    currentStation.nextStationEn = trackData["Dir"]["n"]["En"].as<const char*>();
+    currentStation.wardBox = stationInfo[4].as<const char*>();               // wB -> i[4]
+    currentStation.trackKey = track;
+}
+
+//===============================================================
+// Check System Health
+//===============================================================
+void checkSysHealth() {
+    SystemHealth health;
+    
+    // Memory metrics
+    health.freeHeap = ESP.getFreeHeap();
+    health.totalHeap = ESP.getHeapSize();
+    health.heapUsagePercent = 100.0f * (1.0f - ((float)health.freeHeap / health.totalHeap));
+    
+    // SPIFFS metrics
+    uint32_t totalBytes = SPIFFS.totalBytes();
+    uint32_t usedBytes = SPIFFS.usedBytes();
+    health.spiffsUsagePercent = 100.0f * ((float)usedBytes / totalBytes);
+    
+    // Flash metrics
+    uint32_t flashSize = ESP.getFlashChipSize();
+    uint32_t programSize = ESP.getSketchSize();
+    health.flashUsagePercent = 100.0f * ((float)programSize / flashSize);
+    
+    // Temperature
+    health.temperature = temperatureRead();
+    
+    // Print report in a consistent format
+    Serial.println(F("\n======== System Health ========"));
+    Serial.printf("Memory    : %.1f%% used (%u KB free)\n", 
+                 health.heapUsagePercent, health.freeHeap / 1024);
+    Serial.printf("Flash     : %.1f%% used (%u KB free)\n", 
+                 health.flashUsagePercent, (flashSize - programSize) / 1024);
+    Serial.printf("SPIFFS    : %.1f%% used (%u KB free)\n", 
+                 health.spiffsUsagePercent, (totalBytes - usedBytes) / 1024);
+    Serial.printf("CPU Temp  : %.1f°C\n", health.temperature);
+    Serial.println(F("=============================\n"));
+    
+    // Optional: Log warnings for high usage
+    if (health.heapUsagePercent > 80.0f) 
+        Serial.println(F("WARNING: High memory usage"));
+    if (health.spiffsUsagePercent > 90.0f) 
+        Serial.println(F("WARNING: High SPIFFS usage"));
+    if (health.flashUsagePercent > 90.0f) 
+        Serial.println(F("WARNING: High flash usage"));
+    if (health.temperature > 60.0f) 
+        Serial.println(F("WARNING: High CPU temperature"));
+}
+
+
+
+
+
+
+
+//===============================================================
+// Parse Track Data from Array Format helper function
+//===============================================================
+bool parseTrackData(JsonArray trackArray, JsonObject& trackData, const String& targetTrack = "") {
+    if (!trackArray || trackArray.size() < 6) return false;
+    
+    String trackKey = trackArray[0].as<String>();
+    if (targetTrack.length() > 0 && trackKey != targetTrack) return false;
+    
+    // Marker data
+    trackData["Marker"]["LC"] = trackArray[1];
+    trackData["Marker"]["sNum"] = trackArray[2];
+    
+    // Audio data
+    JsonArray audioArray = trackArray[3];
+    if (audioArray && audioArray.size() >= 4) {
+        trackData["audio"]["melody"] = audioArray[0];
+        trackData["audio"]["atos"] = audioArray[1];
+        trackData["audio"]["dC"] = audioArray[2];
+        trackData["audio"]["va"] = audioArray[3];
+    }
+    
+    // Direction data
+    JsonArray prevArray = trackArray[4];
+    if (prevArray && prevArray.size() >= 2) {
+        trackData["Dir"]["p"]["Ja"] = prevArray[0];
+        trackData["Dir"]["p"]["En"] = prevArray[1];
+    }
+    
+    JsonArray nextArray = trackArray[5];
+    if (nextArray && nextArray.size() >= 2) {
+        trackData["Dir"]["n"]["Ja"] = nextArray[0];
+        trackData["Dir"]["n"]["En"] = nextArray[1];
+    }
+    
+    return true;
+}
+
+// Helper function to find track data in station
+bool findTrackData(JsonObject stationData, const String& track, JsonObject& trackData) {
+    if (!stationData.containsKey("t")) return false;
+    
+    JsonArray tracks = stationData["t"];
+    if (!tracks || tracks.size() == 0) return false;
+    
+    for (JsonArray trackArray : tracks) {
+        if (parseTrackData(trackArray, trackData, track)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Helper function to get first track from station
+bool getFirstTrackData(JsonObject stationData, String& trackKey, JsonObject& trackData) {
+    if (!stationData.containsKey("t")) return false;
+    
+    JsonArray tracks = stationData["t"];
+    if (!tracks || tracks.size() == 0) return false;
+    
+    JsonArray firstTrack = tracks[0];
+    if (!firstTrack || firstTrack.size() < 1) return false;
+    
+    trackKey = firstTrack[0].as<String>();
+    return parseTrackData(firstTrack, trackData);
+}
+
+// Helper function to validate and get station data
+bool getStationData(const String& line, const String& station, JsonObject& stationData, JsonObject& style) {
+    if (!configLoaded || !stationConfig.containsKey("lines")) return false;
+    
+    JsonObject lines = stationConfig["lines"];
+    if (!lines.containsKey(line)) return false;
+    
+    JsonObject lineObj = lines[line];
+    if (!lineObj.containsKey("stations") || !lineObj.containsKey("style")) return false;
+    
+    if (!lineObj["stations"].containsKey(station)) return false;
+    
+    stationData = lineObj["stations"][station];
+    style = lineObj["style"];
+    return true;
+}
+
+
+
+//===============================================================
+// JR-Beru Shell Command handler
+//===============================================================
 void processCommand() {
     serialCommand.trim();  // Remove leading/trailing whitespace
     
@@ -2549,9 +2796,8 @@ void processCommand() {
             Serial.println(F("=============================="));
         }
         else if (param == "stations") {
-            Serial.println(F("\n======== Available Stations ========"));
+            Serial.println(F("\n==== Available Stations ===="));
             
-            // Iterate through lines
             for (JsonPair linePair : stationConfig["lines"].as<JsonObject>()) {
                 String lineCode = linePair.key().c_str();
                 Serial.printf_P(PSTR("Line: %s\n"), lineCode.c_str());
@@ -2562,19 +2808,20 @@ void processCommand() {
                     String stationName = stationPair.key().c_str();
                     JsonObject stationData = stationPair.value();
                     
-                    // Get station info
-                    String stationJa = stationData["sInfo"]["Ja"].as<String>();
-                    String stationCode = stationData["sInfo"]["sC"].as<String>();
+                    // Get station info from i array
+                    JsonArray stationInfo = stationData["i"];
+                    String stationJa = stationInfo[1].as<String>();  // Ja is at index 1
+                    String stationCode = stationInfo[0].as<String>(); // sC is at index 0
                     
-                    // List tracks for this station
-                    JsonObject tracks = stationData["Trk"];
-                    int trackCount = 0;
+                    // List tracks for this station from t array
+                    JsonArray tracks = stationData["t"];
+                    int trackCount = tracks.size();
                     String trackList = "";
                     
-                    for (JsonPair trackPair : tracks) {
-                        if (trackCount > 0) trackList += ", ";
-                        trackList += trackPair.key().c_str();
-                        trackCount++;
+                    for (JsonArray trackArray : tracks) {
+                        int trackNum = trackArray[0].as<int>();
+                        if (trackList.length() > 0) trackList += ", ";
+                        trackList += "track" + String(trackNum);
                     }
                     
                     Serial.printf_P(PSTR("  - %s (%s, %s) - Tracks: %s\n"), 
@@ -2614,29 +2861,24 @@ void processCommand() {
         String station = param.substring(0, secondSpace);
         String track = param.substring(secondSpace + 1);
         
-        // Validate parameters
-        if (!stationConfig["lines"].containsKey(line)) {
-            Serial.printf_P(PSTR("Line '%s' not found\n"), line.c_str());
+        // Get station data and validate
+        JsonObject stationData;
+        JsonObject style;
+        if (!getStationData(line, station, stationData, style)) {
+            Serial.printf_P(PSTR("Invalid station data for line '%s', station '%s'\n"), line.c_str(), station.c_str());
             Serial.print(PROMPT);
             return;
         }
         
-        if (!stationConfig["lines"][line]["stations"].containsKey(station)) {
-            Serial.printf_P(PSTR("Station '%s' not found in line '%s'\n"), station.c_str(), line.c_str());
-            Serial.print(PROMPT);
-            return;
-        }
+        // Create a temporary track object
+        StaticJsonDocument<512> trackDoc;
+        JsonObject trackData = trackDoc.to<JsonObject>();
         
-        if (!stationConfig["lines"][line]["stations"][station]["Trk"].containsKey(track)) {
+        if (!findTrackData(stationData, track, trackData)) {
             Serial.printf_P(PSTR("Track '%s' not found in station '%s'\n"), track.c_str(), station.c_str());
             Serial.print(PROMPT);
             return;
         }
-        
-        // Update current station
-        JsonObject stationData = stationConfig["lines"][line]["stations"][station];
-        JsonObject trackData = stationData["Trk"][track];
-        JsonObject style = stationConfig["lines"][line]["style"];
         
         updateCurrentStation(stationData, trackData, style, line.c_str(), station.c_str(), track.c_str());
         saveDeviceState();

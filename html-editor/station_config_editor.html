@@ -355,7 +355,7 @@
         .station-name-hiragana { 
             font-size: 16px; 
             font-weight: bold;
-            color: #333;  
+            color: #333; 
             text-align: center;
             width: 100%;
         }
@@ -1052,11 +1052,11 @@
                         <label for="configFilename">Config Filename</label>
                         <input type="text" id="configFilename" value="stations_config.json">
                     </div>
-                    <div class="config-file-buttons">
-                        <input type="file" id="configFileInput" accept=".json" style="display: none;" onchange="importConfig(this)">
-                        <button class="btn" onclick="document.getElementById('configFileInput').click()">Import</button>
-                        <button class="btn" onclick="exportConfig()">Export</button>
-                        <button class="btn" onclick="saveChanges()">Save</button>
+                <div class="config-file-buttons">
+                    <input type="file" id="configFileInput" accept=".json" style="display: none;" onchange="importConfig(this)">
+                    <button class="btn" onclick="document.getElementById('configFileInput').click()">Import</button>
+                    <button class="btn" onclick="exportConfig()">Export</button>
+                    <button class="btn" onclick="saveChanges()">Save</button>
                     </div>
                 </div>
             </div>
@@ -1065,7 +1065,7 @@
             <div class="editor-panel line-config">
                 <h3>Line Configuration</h3>
                 <div class="config-grid">
-                    <div class="form-group">
+                <div class="form-group">
                         <label for="lineSelect">Select Line</label>
                         <select id="lineSelect" onchange="updateLineSelection()"></select>
                     </div>
@@ -1073,22 +1073,22 @@
                         <div class="color-input">
                             <label for="lineMarkerBgColor">Background</label>
                             <div class="input-group">
-                                <input type="color" id="lineMarkerBgColor">
-                                <input type="text" id="lineMarkerBgColorHex">
+                            <input type="color" id="lineMarkerBgColor">
+                            <input type="text" id="lineMarkerBgColorHex">
                             </div>
                         </div>
                         <div class="color-input">
                             <label for="lineNumberBgColor">Line Color</label>
                             <div class="input-group">
-                                <input type="color" id="lineNumberBgColor">
-                                <input type="text" id="lineNumberBgColorHex">
+                            <input type="color" id="lineNumberBgColor">
+                            <input type="text" id="lineNumberBgColorHex">
                             </div>
                         </div>
                         <div class="color-input">
                             <label for="directionBarBgColor">DirectionBar</label>
                             <div class="input-group">
-                                <input type="color" id="directionBarBgColor">
-                                <input type="text" id="directionBarBgColorHex">
+                            <input type="color" id="directionBarBgColor">
+                            <input type="text" id="directionBarBgColorHex">
                             </div>
                         </div>
                     </div>
@@ -1390,8 +1390,8 @@
                                     <div class="station-number-inner">
                                         <div class="line-code-jy">${lineMarker.LC || ''}</div>
                                         <div class="line-number">${lineMarker.sNum || ''}</div>
-                                    </div>
-                                </div>
+                    </div>
+                    </div>
                             </div>
                             <div class="station-info">
                                 <div class="station-name-ja">${stationInfo.Ja || ''}</div>
@@ -1402,12 +1402,12 @@
                         <div class="ward-label">
                             <div class="ward-box">${stationInfo.wB || ''}</div>
                             <div class="ward-text">区</div>
-                        </div>
+                    </div>
                         <div class="direction-bar" style="background: ${line.style?.directionBarBgColor || '#006400'}">
                             <div class="station-indicator" style="background: ${line.style?.lineNumberBgColor || '#80C241'}"></div>
                             <div class="direction-left">
                                 <span class="direction-station">${prev.Ja || ''}</span>
-                            </div>
+                </div>
                             <div class="direction-right">
                                 <span class="direction-station">${next.Ja || ''}</span>
                             </div>
@@ -1424,8 +1424,8 @@
                     const stationNameJa = preview.querySelector('.station-name-ja');
                     const lineMarker = preview.querySelector('.line-marker');
                     const stationContent = preview.querySelector('.station-content');
-                    
-                    if (stationNameJa && lineMarker && stationContent) {
+                
+                if (stationNameJa && lineMarker && stationContent) {
                         const offset = stationNameJa.getBoundingClientRect().left - 
                                      stationContent.getBoundingClientRect().left;
                         lineMarker.style.left = offset + 'px';
@@ -1474,13 +1474,13 @@
                 configData.lines = {
                     ...configData.lines,
                     [lineCode]: {
-                        style: {
-                            lineMarkerBgColor: "#000000",
-                            lineNumberBgColor: "#80C241",
-                            directionBarBgColor: "#006400"
-                        },
-                        stations: {
-                            "Sample Station": {
+                style: {
+                        lineMarkerBgColor: "#000000",
+                        lineNumberBgColor: "#80C241",
+                        directionBarBgColor: "#006400"
+                    },
+                    stations: {
+                        "Sample Station": {
                                 "sInfo": {
                                     "sC": "SMP",
                                     "Ja": "サンプル駅",
@@ -1489,7 +1489,7 @@
                                     "wB": "山"
                                 },
                                 "Trk": {
-                                    "track1": createDefaultTrack(lineCode)
+                                "track1": createDefaultTrack(lineCode)
                                 }
                             }
                         }
@@ -1551,7 +1551,7 @@
                 }
                 
                 // Create new station with default values
-                configData.lines[lineCode].stations[stationName] = {
+            configData.lines[lineCode].stations[stationName] = {
                     "sInfo": {
                         "Ja": nextStationJa && nextStationJa !== "次の駅" ? nextStationJa : "新しい駅",
                         "sC": "",
@@ -1666,31 +1666,139 @@
             }
         }
 
-        function exportConfig() {
-            const exportData = JSON.parse(JSON.stringify(configData));
+        // Add this function to detect if the imported JSON is in the new format
+        function isNewFormat(data) {
+            if (!data || !data.lines) return false;
             
-            // No need to transform property names as they are already in the shortened format
-            
-            // Json minification function to save space
-            const jsonStr = JSON.stringify(exportData, null, 1);
-            const fixedStr = jsonStr.replace(/\\\\/g, '\\')
-                           .replace(/\n\s+/g, '\n') // Remove extra spaces at start of lines
-                           .replace(/{\n/g, '{')     // Remove newline after {
-                           .replace(/\n}/g, '}')     // Remove newline before }
-                           .replace(/,\n/g, ',')     // Remove newline after commas
-                           .replace(/\[\n/g, '[')    // Remove newline after [
-                           .replace(/\n\]/g, ']')    // Remove newline before ]
-                           .replace(/": /g, '":');    // Remove space after colons
-            
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(fixedStr);
-            
-            const filename = document.getElementById('configFilename').value || 'stations_config.json';
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', filename);
-            linkElement.click();
+            // Check if any station has the new format (i and t properties)
+            for (const line in data.lines) {
+                for (const station in data.lines[line].stations) {
+                    if (data.lines[line].stations[station].i || data.lines[line].stations[station].t) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
+        // Add this function to convert from new format to legacy format for editor compatibility
+        function convertToLegacyFormat(data) {
+            const convertedData = JSON.parse(JSON.stringify(data));
+            
+            for (const line in convertedData.lines) {
+                for (const station in convertedData.lines[line].stations) {
+                    const stationData = convertedData.lines[line].stations[station];
+                    
+                    // Convert from new format to legacy format
+                    if (stationData.i && Array.isArray(stationData.i)) {
+                        stationData.sInfo = {
+                            sC: stationData.i[0] || "",
+                            Ja: stationData.i[1] || "",
+                            Hi: stationData.i[2] || "",
+                            Ko: stationData.i[3] || "",
+                            wB: stationData.i[4] || ""
+                        };
+                        delete stationData.i;
+                    }
+                    
+                    if (stationData.t && Array.isArray(stationData.t)) {
+                        stationData.Trk = {};
+                        
+                        // Convert each track from array to object
+                        stationData.t.forEach(track => {
+                            const trackNumber = track[0];
+                            const trackKey = `track${trackNumber}`;
+                            
+                            stationData.Trk[trackKey] = {
+                                Marker: {
+                                    LC: track[1] || "",
+                                    sNum: track[2] || ""
+                                },
+                                audio: {
+                                    melody: track[3][0] || 1,
+                                    atos: track[3][1] || 1,
+                                    dC: track[3][2] || 1,
+                                    va: track[3][3] || 1
+                                },
+                                Dir: {
+                                    p: {
+                                        Ja: track[4][0] || "",
+                                        En: track[4][1] || ""
+                                    },
+                                    n: {
+                                        Ja: track[5][0] || "",
+                                        En: track[5][1] || ""
+                                    }
+                                }
+                            };
+                        });
+                        
+                        delete stationData.t;
+                    }
+                }
+            }
+            
+            return convertedData;
+        }
+
+        // Add this function to convert from legacy format to new format for export
+        function convertToNewFormat(data) {
+            const convertedData = JSON.parse(JSON.stringify(data));
+            
+            for (const line in convertedData.lines) {
+                for (const station in convertedData.lines[line].stations) {
+                    const stationData = convertedData.lines[line].stations[station];
+                    
+                    // Convert from legacy format to new format
+                    if (stationData.sInfo) {
+                        stationData.i = [
+                            stationData.sInfo.sC || "",
+                            stationData.sInfo.Ja || "",
+                            stationData.sInfo.Hi || "",
+                            stationData.sInfo.Ko || "",
+                            stationData.sInfo.wB || ""
+                        ];
+                        delete stationData.sInfo;
+                    }
+                    
+                    if (stationData.Trk) {
+                        stationData.t = [];
+                        
+                        // Convert each track from object to array
+                        for (const trackKey in stationData.Trk) {
+                            const track = stationData.Trk[trackKey];
+                            const trackNumber = parseInt(trackKey.replace(/\D/g, '')) || 1;
+                            
+                            stationData.t.push([
+                                trackNumber,
+                                track.Marker?.LC || "",
+                                track.Marker?.sNum || "",
+                                [
+                                    track.audio?.melody || 1,
+                                    track.audio?.atos || 1,
+                                    track.audio?.dC || 1,
+                                    track.audio?.va || 1
+                                ],
+                                [
+                                    track.Dir?.p?.Ja || "",
+                                    track.Dir?.p?.En || ""
+                                ],
+                                [
+                                    track.Dir?.n?.Ja || "",
+                                    track.Dir?.n?.En || ""
+                                ]
+                            ]);
+                        }
+                        
+                        delete stationData.Trk;
+                    }
+                }
+            }
+            
+            return convertedData;
+        }
+
+        // Update the importConfig function to handle both formats
         function importConfig(input) {
             const file = input.files[0];
             if (file) {
@@ -1699,8 +1807,16 @@
                     try {
                         const importedData = JSON.parse(e.target.result);
                         
-                        // No need to normalize property names as we're only using the new format
-                        configData = importedData;
+                        // Check if the imported data is in the new format
+                        if (isNewFormat(importedData)) {
+                            console.log("Detected new format JSON, converting for editor compatibility");
+                            // Convert to legacy format for editor compatibility
+                            configData = convertToLegacyFormat(importedData);
+                        } else {
+                            // Use the imported data as is (legacy format)
+                            configData = importedData;
+                        }
+                        
                         document.getElementById('configFilename').value = file.name;
                         initializeEditor();
                         
@@ -1728,6 +1844,31 @@
                 };
                 reader.readAsText(file, 'UTF-8');
             }
+        }
+
+        // Update the exportConfig function to export in the new format
+        function exportConfig() {
+            // First convert to the new format
+            const exportData = convertToNewFormat(configData);
+            
+            // Json minification function to save space
+            const jsonStr = JSON.stringify(exportData, null, 1);
+            const fixedStr = jsonStr.replace(/\\\\/g, '\\')
+                           .replace(/\n\s+/g, '\n') // Remove extra spaces at start of lines
+                           .replace(/{\n/g, '{')     // Remove newline after {
+                           .replace(/\n}/g, '}')     // Remove newline before }
+                           .replace(/,\n/g, ',')     // Remove newline after commas
+                           .replace(/\[\n/g, '[')    // Remove newline after [
+                           .replace(/\n\]/g, ']')    // Remove newline before ]
+                           .replace(/": /g, '":');    // Remove space after colons
+            
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(fixedStr);
+            
+            const filename = document.getElementById('configFilename').value || 'stations_config.json';
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', filename);
+            linkElement.click();
         }
 
         function updateTrackSelection() {
