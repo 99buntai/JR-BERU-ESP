@@ -10,27 +10,27 @@ WebServer server(80);
 
 #define RX_PIN 16  // For DFPlayer
 #define TX_PIN 17  // For DFPlayer
-#define BUTTON_PIN 4  // Replace D4 with GPIO4
+#define BUTTON_PIN 4  // GPIO4 for the switch button
 HardwareSerial dfPlayerSerial(1); // Use ESP32's second UART
 #define FPSerial dfPlayerSerial
 
 DFRobotDFPlayerMini myDFPlayer;
 void printDetail(uint8_t type, int value);
 
-#define CONFIG_ASYNC_TCP_RUNNING_CORE 0
-#define CONFIG_ASYNC_TCP_USE_WDT 0
+#define CONFIG_ASYNC_TCP_RUNNING_CORE 0 // Use core 0 for AsyncTCP
+#define CONFIG_ASYNC_TCP_USE_WDT 0 // Disable WDT for AsyncTCP
 
 //================================
 // Global Configuration Constants
 //================================
-#define FW_VERSION      "ESP32-MCU-R0.4.11 WebUI-R3.2.6"  // Current firmware version
+#define FW_VERSION      "ESP32-MCU-R0.4.12 WebUI-R3.2.6"  // Current firmware version
 
 // Audio folder mappings on SD card
 int MelodyFolder = 1;    // /01/ - Contains departure melodies
 int AtosFolder = 2;      // /02/ - Contains ATOS announcements
 int DoorChimeFolder = 3; // /03/ - Contains door chime sounds
 int VAFolder = 4;        // /04/ - Contains platform announcements
-int FileCount;
+int FileCount; 
 // Volume configuration
 int globalVolume = 22;   // Initial volume (range: 0-30)
 
@@ -58,7 +58,7 @@ bool RandomPlayOn = true;
 unsigned long lastDebounceTime = 0;  // Last time the button state changed
 unsigned long debounceDelay = 10;  // Debounce time; increase if the output flickers
 
-//HTTP Logins
+//HTTP Logins unused for now
 const char* HTTP_USERNAME = "JR";
 const char* HTTP_PASSWORD = "beru";
 
@@ -100,7 +100,7 @@ struct StationData {
 DynamicJsonDocument stationConfig(120768); // 120KB buffer for JSON
 bool configLoaded = false;
 
-String currentConfigFilename = "station_config.json";
+String currentConfigFilename = "station_config.json";//set default config filename
 
 String playbackMode = "selected"; // Options: "selected", "random", "sequence"
 int sequenceCurrentIndex = 0; // For tracking current position in sequence
@@ -148,10 +148,9 @@ struct DeviceState {
 
 
 
-
-
-
-//================================WiFi and Server Setup=============================
+//===============================================================
+// WiFi and Server Setup
+//===============================================================
 void saveConfigCallback() {shouldSaveConfig = true;}
 void setupWiFiManager() {
   WiFiManager wifiManager;
@@ -205,13 +204,18 @@ const char* PROMPT = "JR-Beru:_$ ";
 String serialCommand = "";
 bool commandComplete = false;
 
+
+//===============================================================
+//  void setup()
+//===============================================================
+
 void setup() {
   dfPlayerSerial.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
   Serial.begin(115200);
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   delay(600);
-
+  Serial.println(F("\n\n\n\n\n\n\n\n\n"));
   Serial.println(F("\n==================="));
   Serial.println(F(" JR-Beru Booting "));
   Serial.println(F("==================="));
@@ -258,18 +262,18 @@ void setup() {
                currentStation.stationNameEn.c_str(), 
                currentStation.trackKey.c_str());
 
-  myDFPlayer.disableLoop();
-  PlayRandomAudio(MelodyFolder,MelodyCount);
+  // Play random melody as boot-up sound
+  PlayRandomAudio(MelodyFolder,MelodyCount);delay(500);myDFPlayer.disableLoop();
 
   // Create button handler task on Core 0
   xTaskCreatePinnedToCore(
     buttonHandlerTask,
     "buttonHandler",
-    2048,  // Stack size
+    20192,  // Stack size
     NULL,
     23,     // Priority
     NULL,
-    0  // runs on core
+    1  // runs on core
   );
 
   // Start WiFi setup
@@ -297,7 +301,7 @@ void setup() {
       "sequenceHandler",
       8192,  // stack size
       NULL,
-      1,
+      1,//
       NULL,
       CONFIG_ASYNC_TCP_RUNNING_CORE
     );
@@ -345,11 +349,6 @@ void loop()
     ElegantOTA.loop();
     checkWiFiConnection();
   }
-  
-  // Handle button input and other tasks
-  handleButton();
-  CheckDFPStatus();
-  DoorChime();
   
   // Small delay to prevent watchdog issues
   delay(1);
@@ -655,433 +654,285 @@ void handleRoot() {
 
   // JavaScript
   html += "<script>"
-          // API calls
-          "const api = (url, method='GET') => fetch(url, {method});"
+          // Core utilities and DOM helpers
+          "const api = (url, method = 'GET') => fetch(url, {method});"
           "const $ = id => document.getElementById(id);"
-          "const $all = (selector, parent=document) => parent.querySelectorAll(selector);"
+          "const $q = (sel, parent) => (parent || document).querySelector(sel);"
+          "const $all = (sel, parent) => (parent || document).querySelectorAll(sel);"
+          "const setTextContent = (sel, val) => { const el = $q(sel); if(el) el.textContent = val || ''; };"
+          "const setStyle = (sel, prop, val) => { const el = $q(sel); if(el) el.style[prop] = val; };"
+          "const setSelectValue = (id, val) => { const el = $(id); if(el && val) el.value = val; };"
+          "const populateOptions = (items, selected) => {"
+          "  if (!items) return '';"
+          "  return Object.keys(items).map(item => `<option value=\"${item}\" ${item === selected ? 'selected' : ''}>${item}</option>`).join('');"
+          "};"
           
-          // Update audio config
-          "function updateConfig() {"
-          "  const params = ['melody', 'atos', 'doorchime', 'platform']"
-          "    .map(id => id + '=' + $(id).value).join('&');"
-          "  api('/updateConfig?' + params);"
-          "}"
-
-          // Play VA function
-          "function playVA() {"
-          "  const mode = $('playMode').value;"
-          "  fetch('/playVA?mode=' + mode);"  // call the playVA endpoint
-          "}"
-
-          // Volume control
-          "function setVolume(v) {"
-          "  api('/setVolume?value=' + v);"
-          "  $('volumeValue').textContent = v;"
-          "}"
+          "let cachedConfig = null;"
+          "let updateInProgress = false;"
+          "let lastStationCounter = 0;"
           
-          // DFPlayer reinitialization
-          "function reinitDFPlayer() {"
-          "  api('/reinitDFPlayer');"
-          "  alert('DFPlayer reinitialization requested');"
-          "}"
-
-          // Line marker position
-          "function updateLineMarkerPosition() {"
-          "  const stationNameJa = document.querySelector('.staName-ja');"
-          "  const lineMarker = document.querySelector('.line-marker');"
-          "  const stationContent = document.querySelector('.station-content');"
-          "  const stationCode = document.querySelector('.line-code-akb');"
-          "  "
-          "  if (stationNameJa && lineMarker && stationContent) {"
-              // Handle if station code is blank
-          "    if (stationCode && (!stationCode.textContent || stationCode.textContent.trim() === '')) {"
-          "      lineMarker.style.backgroundColor = 'transparent';"
-          "      lineMarker.style.boxShadow = 'none';"
-          "      lineMarker.style.transform = 'translate(-55px, -16px)';" // no station code station marker posotion X,Y
-          "    } else {"
-                // When code exists, force reset all modified styles"
-          "      lineMarker.style.backgroundColor = '';"
-          "      lineMarker.style.boxShadow = '';"
-          "      lineMarker.style.transform = '';"
-          "    }"
-          "    "
-              // Update Line Marker position
-          "    const offset = stationNameJa.getBoundingClientRect().left - "
-          "                   stationContent.getBoundingClientRect().left;"
-          "    lineMarker.style.left = offset + 'px';" // Maintain original positioning logic
-          "  }"
-          "}"
+          // API interaction functions
+          "const updateConfig = () => {"
+          "  const params = ['melody', 'atos', 'doorchime', 'platform'].map(id => `${id}=${$(id).value}`).join('&');"
+          "  api(`/updateConfig?${params}`);"
+          "};"
           
-          // Update Line Marker position on load
-          "window.addEventListener('load', function() {"
-          "  setTimeout(updateLineMarkerPosition, 10);"
-          "});"
-
-              // File handling functions
-          "function uploadConfig() {"
+          "const playVA = () => api(`/playVA?mode=${$('playMode').value}`);"
+          "const setVolume = (v) => { api(`/setVolume?value=${v}`); $('volumeValue').textContent = v; };"
+          "const reinitDFPlayer = () => { api('/reinitDFPlayer').then(() => alert('DFPlayer reinitialization requested')); };"
+          "const downloadConfig = () => { location.href = '/downloadConfig'; };"
+          
+          // Config file management
+          "const uploadConfig = () => {"
           "  const file = $('configFile').files[0];"
           "  if (!file) return;"
           "  const fd = new FormData();"
           "  fd.append('config', file);"
           "  fetch('/upload', {method: 'POST', body: fd})"
-          "    .then(response => {"
-          "      if (!response.ok) {"
-          "        return response.json().then(data => {"
-          "          throw new Error(data.error || 'Unknown error occurred');"
-          "        });"
-          "      }"
-          "      return response;"
-          "    })"
+          "    .then(response => !response.ok ? response.json().then(data => { throw new Error(data.error || 'Unknown error'); }) : response)"
           "    .then(() => forceConfigReload())"
-          "    .catch(e => {"
-          "      console.error('Error:', e);"
-          "      alert('Upload failed: ' + e.message);"
-          "    });"
-          "}"
-
-          "function downloadConfig() { location.href = '/downloadConfig'; }"
-
-          "function deleteConfig() {"
+          "    .catch(e => { console.error('Error:', e); alert('Upload failed: ' + e.message); });"
+          "};"
+          
+          "const deleteConfig = () => {"
           "  if (!confirm('Delete configuration file?')) return;"
           "  api('/deleteConfig')"
           "    .then(r => r.ok ? r.text() : Promise.reject('Status: ' + r.status))"
-          "    .then(() => {"
-          "      return forceConfigReload();"
-          "    })"
-          "    .then(() => {"
-          "      alert('Configuration deleted successfully');"
-          "    })"
+          "    .then(() => forceConfigReload())"
+          "    .then(() => alert('Configuration deleted successfully'))"
           "    .catch(e => alert('Failed to delete configuration: ' + e));"
-          "}"
-
-          // Cached config and loading
-          "let cachedConfig = null;"
-          "function loadConfig() {"
-            // Clear the cached config first
-          "  cachedConfig = null;"
-            // Reset all selectors to initial state
-          "  $('lineSelect').innerHTML = '<option>Select Line</option>';"
-          "  $('stationSelect').innerHTML = '<option>Select Station</option>';"
-          "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
-          "  Promise.all(["
-          "    api('/getCurrentConfig').then(r => r.json()),"
-          "    api('/getStationConfig').then(r => r.json())"
-          "  ]).then(([configInfo, config]) => {"
-          "    $('configName').textContent = configInfo.filename;"
-              // Update cached config with fresh data
-          "    cachedConfig = JSON.parse(JSON.stringify(config));"
-          "    $('playMode').value = configInfo.playbackMode;"
-          "    if (configInfo.volume !== undefined) {"
-          "      const volumeControl = $('volumeControl');"
-          "      if (volumeControl) volumeControl.value = configInfo.volume;"
-          "      const volumeValue = $('volumeValue');"
-          "      if (volumeValue) volumeValue.textContent = configInfo.volume;"
-          "    }"
-          "    populateSelector('lineSelect', config.lines, null);"
-          "    return api('/getCurrentSelections').then(r => r.json());"
-          "  }).then(sel => {"
-          "    if (!sel) return;"
-          "    if (sel.line && sel.station && sel.track) {"
-          "      $('lineSelect').value = sel.line;"
-          "      if (cachedConfig?.lines[sel.line]) {"
-          "        populateSelector('stationSelect', cachedConfig.lines[sel.line].stations, sel.station);"
-          "        $('stationSelect').value = sel.station;"
-          "        const stationData = cachedConfig.lines[sel.line].stations[sel.station];"
-          "        if (stationData?.t && stationData.t.length > 0) {"
-          "          const tracks = {};"
-          "          stationData.t.forEach(trackArray => {"
-          "            if (trackArray && trackArray.length > 0) {"
-          "              const trackKey = trackArray[0];"
-          "              tracks[trackKey] = trackKey;"
-          "            }"
-          "          });"
-          "          populateSelector('trackSelect', tracks, sel.track);"
-          "          $('trackSelect').value = sel.track;"
-          "          updateStationSign();"
-"        }"
-"      }"
-          "    }"
-          "  }).catch(e => {"
-          "    console.error('Error loading config:', e);"
-              // Reset cached config on error
-          "    cachedConfig = null;"
-          "  });"
-          "}"
+          "};"
           
-          // Add a function to force config reload
-          "function forceConfigReload() {"
-          "  cachedConfig = null;"
-          "  return loadConfig();"
-          "}"
+          "const forceConfigReload = () => { cachedConfig = null; return loadConfig(); };"
           
-          // Populate selectors
-          "function populateSelector(id, items, selected) {"
+          // Selectors management
+          "const populateSelector = (id, items, selected) => {"
           "  const sel = $(id);"
           "  if (!sel) return;"
-          "  sel.innerHTML = '<option>' + sel.options[0].text + '</option>';"
-          "  const keys = Object.keys(items || {});"
-          "  keys.forEach(item => {"
-          "    const opt = document.createElement('option');"
-          "    opt.value = opt.textContent = item;"
-          "    opt.selected = item === selected;"
-          "    sel.appendChild(opt);"
-          "  });"
-          "}"
+          "  sel.innerHTML = `<option>${sel.options[0].text}</option>${populateOptions(items, selected)}`;"
+          "};"
           
-          // Update selectors with selection data
-          "function updateSelectors(sel, config) {"
-          "  console.log('updateSelectors called with:', sel);"
-          "  if (!config) {"
-          "    console.log('No config provided, returning');"
-          "    return;"
-          "  }"
-          "  const line = config?.lines[sel.line];"
-          "  const station = line?.stations[sel.station];"
-          "  console.log('Line:', line ? 'found' : 'not found', 'Station:', station ? 'found' : 'not found');"
-          "  const lsel = $('lineSelect');"
-          "  const lines = Array.from(lsel.options).find(o => o.value === sel.line);"
-          "  if (lines) lines.selected = true;"
-          "  if (line) populateSelector('stationSelect', line.stations, sel.station);"
-          "  if (station && station.t) {"
-          "    console.log('Station has t array with length:', station.t.length);"
-          "    const tracks = {};"
-          "    station.t.forEach(trackArray => {"
-          "      if (trackArray && trackArray.length > 0) {"
-          "        const trackKey = trackArray[0];"
-          "        tracks[trackKey] = trackKey;"
-          "        console.log('Added track key:', trackKey);"
-          "      }"
-          "    });"
-          "    console.log('Populating track selector with keys:', Object.keys(tracks));"
-          "    populateSelector('trackSelect', tracks, sel.track);"
-          "    console.log('Track selector populated, selected track:', sel.track);"
-          "  } else {"
-          "    console.log('Station does not have t array or is null');"
-          "  }"
-          "}"
-
-          // Update station selector
-          "function updateStationSelect() {"
+          "const updateStationSelect = () => {"
           "  const line = $('lineSelect').value;"
+          "  const stations = cachedConfig?.lines?.[line]?.stations;"
           "  $('stationSelect').innerHTML = '<option>Select Station</option>';"
           "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
-          "  if (line && cachedConfig?.lines[line]) {"
-          "    populateSelector('stationSelect', cachedConfig.lines[line].stations);"
+          "  if (line && stations) {"
+          "    populateSelector('stationSelect', stations);"
           "    if ($('stationSelect').options.length > 1) {"
           "      $('stationSelect').selectedIndex = 1;"
           "      updateTrackSelect();"
           "    }"
           "  }"
-          "}"
-
-          // Update track selector
-          "function updateTrackSelect() {"
+          "};"
+          
+          "const updateTrackSelect = () => {"
           "  const line = $('lineSelect').value;"
           "  const station = $('stationSelect').value;"
+          "  const stationData = cachedConfig?.lines?.[line]?.stations?.[station];"
           "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
-          "  if (line && station && cachedConfig?.lines[line]?.stations[station]) {"
-          "    const stationData = cachedConfig.lines[line].stations[station];"
-          "    if (stationData.t && stationData.t.length > 0) {"
-          "      const tracks = {};"
-          "      stationData.t.forEach(trackArray => {"
-          "        if (trackArray && trackArray.length > 0) {"
-          "          const trackKey = String(trackArray[0]);"
-          "          tracks[trackKey] = trackKey;"
-          "        }"
-          "      });"
-          "      populateSelector('trackSelect', tracks);"
-          "      if ($('trackSelect').options.length > 1) {"
-          "        $('trackSelect').selectedIndex = 1;"
-          "        updateStationSign();"
+          "  if (stationData?.t?.length > 0) {"
+          "    const tracks = {};"
+          "    stationData.t.forEach(trackArray => {"
+          "      if (trackArray?.length > 0) {"
+          "        const trackKey = String(trackArray[0]);"
+          "        tracks[trackKey] = trackKey;"
           "      }"
+          "    });"
+          "    populateSelector('trackSelect', tracks);"
+          "    if ($('trackSelect').options.length > 1) {"
+          "      $('trackSelect').selectedIndex = 1;"
+          "      updateStationSign();"
           "    }"
           "  }"
-          "}"
-
-          // Update station sign
-          "let updateInProgress = false;"
-          "function updateStationSign() {"
+          "};"
+          
+          // Station sign update
+          "const updateLineMarkerPosition = () => {"
+          "  const stationNameJa = $q('.staName-ja');"
+          "  const lineMarker = $q('.line-marker');"
+          "  const stationContent = $q('.station-content');"
+          "  const stationCode = $q('.line-code-akb');"
+          "  if (!stationNameJa || !lineMarker || !stationContent) return;"
+          "  if (stationCode && (!stationCode.textContent || stationCode.textContent.trim() === '')) {"
+          "    lineMarker.style.backgroundColor = 'transparent';"
+          "    lineMarker.style.boxShadow = 'none';"
+          "    lineMarker.style.transform = 'translate(-55px, -16px)';"
+          "  } else {"
+          "    lineMarker.style.backgroundColor = '';"
+          "    lineMarker.style.boxShadow = '';"
+          "    lineMarker.style.transform = '';"
+          "  }"
+          "  const offset = stationNameJa.getBoundingClientRect().left - stationContent.getBoundingClientRect().left;"
+          "  lineMarker.style.left = offset + 'px';"
+          "};"
+          
+          "const updateStationSign = () => {"
           "  if (updateInProgress) return;"
           "  updateInProgress = true;"
-          
           "  const line = $('lineSelect').value;"
           "  const station = $('stationSelect').value;"
           "  const track = $('trackSelect').value;"
-
           "  if (!line || !station || !track || track === 'Select Track') {"
           "    updateInProgress = false;"
           "    return;"
           "  }"
-
-          "  const requiredElements = ["
+          "  const requiredSelectors = ["
           "    '.line-marker', '.station-number-container', '.station-indicator', '.direction-bar',"
           "    '.staName-ja', '.staName-hiragana', '.staName-ko', '.ward-box',"
           "    '.line-code-akb', '.line-code-jy', '.line-number',"
           "    '.direction-left .direction-station', '.direction-right .direction-station',"
           "    '.staName-en-left', '.staName-en-center', '.staName-en-right'"
           "  ];"
-          
-          "  if (!requiredElements.every(selector => document.querySelector(selector))) {"
-          "    setTimeout(() => {"
-          "      updateInProgress = false;"
-          "      updateStationSign();"
-          "    }, 100);"
+          "  if (!requiredSelectors.every(sel => $q(sel))) {"
+          "    setTimeout(() => { updateInProgress = false; updateStationSign(); }, 100);"
           "    return;"
           "  }"
-
-          "  fetch(`/updateStationSign?line=${line}&station=${station}&track=${track}`)"
+          "  api(`/updateStationSign?line=${line}&station=${station}&track=${track}`)"
           "    .then(response => response.ok ? response : Promise.reject('Failed to update'))"
           "    .then(() => {"
           "      if (!cachedConfig) return;"
-
           "      const stationData = cachedConfig.lines[line].stations[station];"
           "      if (!stationData) return;"
-          
           "      const style = cachedConfig.lines[line].style;"
-          
           "      let trackData = null;"
           "      if (stationData.t && stationData.t.length > 0) {"
-          "        for (const trackArray of stationData.t) {"
-          "          if (String(trackArray[0]) === String(track)) {"
-          "            trackData = trackArray;"
-          "            break;"
-          "          }"
-          "        }"
+          "        trackData = stationData.t.find(t => t && t.length > 0 && String(t[0]) === String(track));"
           "      }"
-
           "      if (!trackData) return;"
-
-          // Background color updates
-          "      document.querySelector('.line-marker').style.backgroundColor = style.lineMarkerBgColor;"
-          "      document.querySelector('.station-number-container').style.backgroundColor = style.lineNumberBgColor;"
-          "      document.querySelector('.station-indicator').style.backgroundColor = style.lineNumberBgColor;"
-          "      document.querySelector('.direction-bar').style.backgroundColor = style.directionBarBgColor;"
-
-          // Update line marker position
-          "      setTimeout(updateLineMarkerPosition, 10);"
           
-          // Audio value updates
-          "      if ($('melody')) $('melody').value = trackData[3] && trackData[3][0] ? trackData[3][0] : 1;"
-          "      if ($('atos')) $('atos').value = trackData[3] && trackData[3][1] ? trackData[3][1] : 1;"
-          "      if ($('doorchime')) $('doorchime').value = trackData[3] && trackData[3][2] ? trackData[3][2] : 1;"
-          "      if ($('platform')) $('platform').value = trackData[3] && trackData[3][3] ? trackData[3][3] : 1;"
-
-          // Text updates from i array
+                // Update styles and colors
+          "      setStyle('.line-marker', 'backgroundColor', style.lineMarkerBgColor);"
+          "      setStyle('.station-number-container', 'backgroundColor', style.lineNumberBgColor);"
+          "      setStyle('.station-indicator', 'backgroundColor', style.lineNumberBgColor);"
+          "      setStyle('.direction-bar', 'backgroundColor', style.directionBarBgColor);"
+          
+                // Update line marker position
+          "      setTimeout(updateLineMarkerPosition, 10);"
+                // Update audio values
+          "      setSelectValue('melody', trackData[3]?.[0] || 1);"
+          "      setSelectValue('atos', trackData[3]?.[1] || 1);"
+          "      setSelectValue('doorchime', trackData[3]?.[2] || 1);"
+          "      setSelectValue('platform', trackData[3]?.[3] || 1);"
+                // Update station info text
           "      const stInfo = stationData.i || [];"
-          "      document.querySelector('.staName-ja').textContent = stInfo[1] || '';"
-          "      document.querySelector('.staName-hiragana').textContent = stInfo[2] || '';"
-          "      document.querySelector('.staName-ko').textContent = stInfo[3] || '';"
-          "      document.querySelector('.ward-box').textContent = stInfo[4] || '';"
-
-          // Line code and station number
-          "      document.querySelector('.line-code-akb').textContent = stInfo[0] || '';"
-          "      document.querySelector('.line-code-jy').textContent = trackData[1] || '';"
-          "      document.querySelector('.line-number').textContent = trackData[2] || '';"
-
-          // Direction information
-          "      document.querySelector('.direction-left .direction-station').textContent = "
-          "        trackData[4] && trackData[4][0] ? trackData[4][0] : '';"
-          "      document.querySelector('.direction-right .direction-station').textContent = "
-          "        trackData[5] && trackData[5][0] ? trackData[5][0] : '';"
-
-          // Station names in English
-          "      document.querySelector('.staName-en-left').textContent = "
-          "        trackData[4] && trackData[4][1] ? trackData[4][1] : '';"
-          "      document.querySelector('.staName-en-center').textContent = station;"
-          "      document.querySelector('.staName-en-right').textContent = "
-          "        trackData[5] && trackData[5][1] ? trackData[5][1] : '';"
-
-          // Update config values
+          "      setTextContent('.staName-ja', stInfo[1]);"
+          "      setTextContent('.staName-hiragana', stInfo[2]);"
+          "      setTextContent('.staName-ko', stInfo[3]);"
+          "      setTextContent('.ward-box', stInfo[4]);"
+          "      setTextContent('.line-code-akb', stInfo[0]);"
+          "      setTextContent('.line-code-jy', trackData[1]);"
+          "      setTextContent('.line-number', trackData[2]);"
+                // Update direction info
+          "      setTextContent('.direction-left .direction-station', trackData[4]?.[0] || '');"
+          "      setTextContent('.direction-right .direction-station', trackData[5]?.[0] || '');"
+          "      setTextContent('.staName-en-left', trackData[4]?.[1] || '');"
+          "      setTextContent('.staName-en-center', station);"
+          "      setTextContent('.staName-en-right', trackData[5]?.[1] || '');"
           "      updateConfig();"
           "    })"
-          "    .catch(error => {"
-          "      setTimeout(() => updateStationSign(), 500);"
-          "    })"
-          "    .finally(() => {"
-          "      updateInProgress = false;"
-          "    });"
-          "}"
-
-          "$('configFile').addEventListener('change', uploadConfig);"
-          "loadConfig();"
-
-          // Add explicit event listeners for selectors
-          "document.addEventListener('DOMContentLoaded', function() {"
-          "  if ($('lineSelect')) {"
-          "    $('lineSelect').addEventListener('change', function() {"
-          "      updateStationSelect();"
-          "    });"
-          "  }"
+          "    .catch(error => { setTimeout(() => { updateStationSign(); }, 500); })"
+          "    .finally(() => { updateInProgress = false; });"
+          "};"
           
-          "  if ($('stationSelect')) {"
-          "    $('stationSelect').addEventListener('change', function() {"
-          "      updateTrackSelect();"
-          "      updateStationSign();" // Add immediate update
-          "    });"
-          "  }"
-          
-          "  if ($('trackSelect')) {"
-          "    $('trackSelect').addEventListener('change', function() {"
+          // Data loading
+          "const loadConfig = () => {"
+          "  cachedConfig = null;"
+          "  $('lineSelect').innerHTML = '<option>Select Line</option>';"
+          "  $('stationSelect').innerHTML = '<option>Select Station</option>';"
+          "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
+          "  Promise.all(["
+          "    api('/getCurrentConfig').then(r => r.json()),"
+          "    api('/getStationConfig').then(r => r.json())"
+          "  ])"
+          "  .then(([configInfo, config]) => {"
+          "    $('configName').textContent = configInfo.filename;"
+          "    cachedConfig = JSON.parse(JSON.stringify(config));"
+          "    $('playMode').value = configInfo.playbackMode;"
+          "    if (configInfo.volume !== undefined) {"
+          "      $('volumeControl').value = configInfo.volume;"
+          "      $('volumeValue').textContent = configInfo.volume;"
+          "    }"
+          "    populateSelector('lineSelect', config.lines, null);"
+          "    return api('/getCurrentSelections').then(r => r.json());"
+          "  })"
+          "  .then(sel => {"
+          "    if (!sel?.line || !sel?.station || !sel?.track || !cachedConfig?.lines?.[sel.line]) return;"
+          "    setSelectValue('lineSelect', sel.line);"
+          "    populateSelector('stationSelect', cachedConfig.lines[sel.line].stations, sel.station);"
+          "    setSelectValue('stationSelect', sel.station);"
+          "    const stationData = cachedConfig.lines[sel.line].stations[sel.station];"
+          "    if (stationData?.t?.length > 0) {"
+          "      const tracks = {};"
+          "      stationData.t.forEach(trackArray => {"
+          "        if (trackArray?.length > 0) {"
+          "          const trackKey = trackArray[0];"
+          "          tracks[trackKey] = trackKey;"
+          "        }"
+          "      });"
+          "      populateSelector('trackSelect', tracks, sel.track);"
+          "      setSelectValue('trackSelect', sel.track);"
           "      updateStationSign();"
-          "    });"
-          "  }"
-          "});"
-
-// Poll station changes, update UI 
-"function pollStationChanges() {"
-"  const currentCounter = window.lastStationCounter || 0;"
-"  fetch('/checkStationChanged?counter=' + currentCounter)"
-"    .then(r => r.json())"
-"    .then(data => {"
-      // Always update the counter
-"      window.lastStationCounter = data.counter;"
-"      if (data.changed) {"
-"        console.log('Station changed to:', data.station, 'Counter:', data.counter);"
-       // Update UI selectors
-"        if ($('lineSelect').value !== data.line) {"
-"          $('lineSelect').value = data.line;"
-"          populateSelector('stationSelect', cachedConfig.lines[data.line].stations, data.station);"
-"        }"
-"        $('stationSelect').value = data.station;"
-"        const stationData = cachedConfig.lines[data.line].stations[data.station];"
-"        if (stationData.t && stationData.t.length > 0) {"
-"          const tracks = {};"
-"          stationData.t.forEach(trackArray => {"
-"            if (trackArray && trackArray.length > 0) {"
-"              const trackKey = trackArray[0];"
-"              tracks[trackKey] = trackKey;"
-"            }"
-"          });"
-"          populateSelector('trackSelect', tracks, data.track);"
-"          $('trackSelect').value = data.track;"
-"          console.log('Calling updateStationSign from pollStationChanges');"
-          // First make sure the server has the latest selection
-"          fetch(`/updateStationSign?line=${data.line}&station=${data.station}&track=${data.track}`)"
-"            .then(response => response.ok ? response : Promise.reject('Failed to update'))"
-"            .then(() => {"
-"              console.log('Server updated, now updating UI');"
-"              updateStationSign();"
-"            })"
-"            .catch(error => console.error('Error updating station sign:', error));"
-"        }"
-"      }"
-"    })"
-"    .catch(e => console.error('Error checking station changes:', e));"
-"}"
-// Poll every 5 seconds
-"setInterval(pollStationChanges, 5000);"
-
-          // Add an event listener to set the playback mode on page load
-          "document.getElementById('playMode').addEventListener('change', function() {"
-          "  const mode = this.value;"
-          "  fetch('/setPlaybackMode?mode=' + mode)"
-          "    .then(response => response.ok ? response.text() : Promise.reject('Failed to set mode'))"
-          "    .catch(error => console.error('Error:', error));"
-          "});"
+          "    }"
+          "  })"
+          "  .catch(e => { console.error('Error loading config:', e); cachedConfig = null; });"
+          "};"
+          
+          // Station change polling
+          "const pollStationChanges = () => {"
+          "  api(`/checkStationChanged?counter=${lastStationCounter}`)"
+          "    .then(r => r.json())"
+          "    .then(data => {"
+          "      lastStationCounter = data.counter;"
+          "      if (!data.changed) return;"
+          "      console.log('Station changed to:', data.station, 'Counter:', data.counter);"
+          "      if ($('lineSelect').value !== data.line) {"
+          "        setSelectValue('lineSelect', data.line);"
+          "        populateSelector('stationSelect', cachedConfig.lines[data.line].stations, data.station);"
+          "      }"
+          "      setSelectValue('stationSelect', data.station);"
+          "      const stationData = cachedConfig.lines[data.line].stations[data.station];"
+          "      if (stationData?.t?.length > 0) {"
+          "        const tracks = {};"
+          "        stationData.t.forEach(trackArray => {"
+          "          if (trackArray?.length > 0) {"
+          "            const trackKey = trackArray[0];"
+          "            tracks[trackKey] = trackKey;"
+          "          }"
+          "        });"
+          "        populateSelector('trackSelect', tracks, data.track);"
+          "        setSelectValue('trackSelect', data.track);"
+          "        api(`/updateStationSign?line=${data.line}&station=${data.station}&track=${data.track}`)"
+          "          .then(response => response.ok ? response : Promise.reject('Failed to update'))"
+          "          .then(() => updateStationSign())"
+          "          .catch(error => console.error('Error updating station sign:', error));"
+          "      }"
+          "    })"
+          "    .catch(e => console.error('Error checking station changes:', e));"
+          "};"
+          
+          // Initialize everything
+          "const init = () => {"
+            // Setup event listeners
+          "  $('configFile').addEventListener('change', uploadConfig);"
+          "  $('playMode').addEventListener('change', () => {"
+          "    api(`/setPlaybackMode?mode=${$('playMode').value}`)"
+          "      .then(response => response.ok ? response.text() : Promise.reject('Failed to set mode'))"
+          "      .catch(error => console.error('Error:', error));"
+          "  });"
+          "  $('lineSelect').addEventListener('change', updateStationSelect);"
+          "  $('stationSelect').addEventListener('change', () => { updateTrackSelect(); updateStationSign(); });"
+          "  $('trackSelect').addEventListener('change', updateStationSign);"
+          "  window.addEventListener('load', () => setTimeout(updateLineMarkerPosition, 10));"
+            // Initialize data and polling
+          "  loadConfig();"
+          "  setInterval(pollStationChanges, 5000);"
+          "};"
+          
+          "init();"
           "</script></body></html>";
 
   server.send(200, "text/html", html);
-
 }
 
 
@@ -1105,47 +956,50 @@ String populateOptions(const char* folderName, int count, int selectedOption) {
 //===============================================================
 
 void UpdateFileCount() {
-   Serial.println(F("\n=== Indexing Audio File ==="));
+  Serial.println(F("\n=== Indexing Audio File ==="));
 
-   MelodyCount = CheckFileInFolder(MelodyFolder);
-    Serial.printf("Melody Files: %d\n", MelodyCount);
-
-   AtosCount = CheckFileInFolder(AtosFolder);
-    Serial.printf("Atos Files: %d\n", AtosCount);
-
-    DoorChimeCount = CheckFileInFolder(DoorChimeFolder);
-    Serial.printf("DoorChime Files: %d\n", DoorChimeCount);
-
-   VACount = CheckFileInFolder(VAFolder);
-    Serial.printf("VA Files: %d\n", VACount);
-    
-   for (int i = 0; i < 27; i++) Serial.print("=");Serial.println("\n");// print 27 equal signs
+  struct FolderInfo {
+    const char* name;
+    int folder;
+    int* countVar;
+  };
+  
+  const FolderInfo folders[] = {
+    {"Melody", MelodyFolder, &MelodyCount},
+    {"Atos", AtosFolder, &AtosCount},
+    {"DoorChime", DoorChimeFolder, &DoorChimeCount},
+    {"VA", VAFolder, &VACount}
+  };
+  
+  for (const auto& folder : folders) {
+    *folder.countVar = CheckFileInFolder(folder.folder);
+    Serial.printf("%s Files: %d\n", folder.name, *folder.countVar);
+  }
+  
+  Serial.println(F("===========================\n"));
 }
 
 //===============================================================
-// Play Current Audio
+// Play Audio - Consolidated function for both random and specific tracks
 //===============================================================
 
-
-void PlayCurrentAudio(int folder, int audioIndex) {
-  myDFPlayer.playFolder(folder, audioIndex);
+void PlayAudio(int folder, int audioIndex, bool randomPlay, int totalCount) {
+  int trackToPlay = randomPlay ? generateRandomNumber(1, totalCount) : audioIndex;
+  myDFPlayer.playFolder(folder, trackToPlay);
+  
   Serial.printf_P(PSTR("PlayingFolder: %d\n"), folder);
-  Serial.printf_P(PSTR("Playing Audio: %d\n"), audioIndex);
-  delay(100);
+  if (randomPlay) {
+    Serial.printf_P(PSTR("RandomPlay: %d/%d\n"), trackToPlay, totalCount);
+  } else {
+    Serial.printf_P(PSTR("Playing Audio: %d\n"), trackToPlay);
+  }
+  
+  delay(300); // Waiting for mp3 board
 }
 
-
-//===============================================================
-// Play Random Audio
-//===============================================================
-
-void PlayRandomAudio(int folder, int TotalAudioCount) {
-
-   int RandomAudio = generateRandomNumber(1, TotalAudioCount);
-    myDFPlayer.playFolder(folder, RandomAudio);
-    Serial.printf_P(PSTR("PlayingFolder: %d\n"), folder);
-    Serial.printf_P(PSTR("RandomPlay: %d/%d\n"), RandomAudio, TotalAudioCount);
-    delay(100); // Waiting for mp3 board
+// Legacy wrapper functions that call the consolidated function
+void PlayRandomAudio(int folder, int totalCount) {
+  PlayAudio(folder, 0, true, totalCount);
 }
 
 //===============================================================
@@ -1158,28 +1012,20 @@ int generateRandomNumber(int min, int max) {
 
 
   //===============================================================
-  // Check File In Folder
+  // Check File In Folder (with error correction because of DFPlayer bug)
   //===============================================================
 
-
-
 int CheckFileInFolder(int folder) {
-  int fileCount = 0;
-  int retryCount = 0;
-  const int MAX_RETRIES = 3;
-  
-  // Try up to MAX_RETRIES times to get a valid file count
-  while (retryCount < MAX_RETRIES) {
-    fileCount = myDFPlayer.readFileCountsInFolder(folder);
-    fileCount = myDFPlayer.readFileCountsInFolder(folder);//bug fix! do not remove run twice to get the correct value
-    if (fileCount > 0) {
-      break; // Valid count received
+    int fileCount = 0;
+    const int MAX_RETRIES = 3;
+
+    for (int i = 0; i < MAX_RETRIES; i++) {
+        int first = myDFPlayer.readFileCountsInFolder(folder);
+        int second = myDFPlayer.readFileCountsInFolder(folder);
+        if (first > 0 && first == second) return first;  // Return if both match
+        fileCount = first > 0 ? first : second;  // Store the last valid value
     }
-    retryCount++;
-    delay(10); // Short delay between retries
-  }
-  
-  return (fileCount > 0) ? fileCount : 1; // Return 1 if no valid count
+    return fileCount > 0 ? fileCount : 1;  // Return last valid count or 1
 }
 
 
@@ -1192,34 +1038,31 @@ void handleButton() {
     unsigned long currentTime = millis();
     int reading = digitalRead(BUTTON_PIN);
 
-    if (reading != lastMainButtonState) {
-        lastDebounceTime = currentTime;
-    }
+    // Update debounce timer if button state changed
+    if (reading != lastMainButtonState) {lastDebounceTime = currentTime;}
 
+    // Process button state change after debounce period
     if ((currentTime - lastDebounceTime) > debounceDelay && reading != MainButtonState) {
       MainButtonState = reading;
 
-        if (MainButtonState == LOW) {
-          Serial.println(F("\n==Button Pressed=="));
-            if (!loopPlaying) {
-               handlePlayMelody();
-                myDFPlayer.enableLoop(); // Call only once
-                loopPlaying = true;
-                AtosLastPlayed = false;
-                //notifyUIofStationChange();
-            }
-        } else if (loopPlaying) {
-          Serial.println(F("\n==Button Released=="));
-            //myDFPlayer.stop();
-            myDFPlayer.disableLoop();myDFPlayer.disableLoop();
-            loopPlaying = false;
-            handlePlayAtos();
-
-          AtosLastPlayed = true;
+      if (MainButtonState == LOW) {
+        Serial.println(F("\n==Button Pressed=="));
+        if (!loopPlaying) {
+          Serial.printf("Playback Mode: %s\n", playbackMode.c_str());
+          handlePlayMelody(); delay(1000);myDFPlayer.enableLoop();
+          loopPlaying = true;
+          AtosLastPlayed = false;
+        }
+      } else if (loopPlaying) {
+        Serial.println(F("\n==Button Released=="));
+        //myDFPlayer.disableLoop();// bug fix, disable loop twice because DFPlayer is unreliable
+        loopPlaying = false;
+        handlePlayAtos();delay(1000);myDFPlayer.disableLoop();
+        AtosLastPlayed = true;
+      }
     }
-  }
 
-  lastMainButtonState = reading;
+    lastMainButtonState = reading;
 }
 
 
@@ -1235,41 +1078,46 @@ void toggleRandomPlay() {
 }
 
 //===============================================================
-// Play Audio
+// Play Audio Handlers
 //===============================================================
 
-void playAudio(int folder, int currentTrack, int totalTracks) {
- DonePlaying = false;
-    myDFPlayer.playFolder(folder, RandomPlayOn ? random(1, totalTracks + 1) : currentTrack);
-    Serial.printf_P(PSTR("Playing %s audio %d/%d from folder %d\n"), 
-                   RandomPlayOn ? "random" : "current", 
-                   RandomPlayOn ? random(1, totalTracks + 1) : currentTrack,
-                   totalTracks, folder);
-    delay(100); // Waiting for mp3 board
+// Simplified audio handlers using the consolidated PlayAudio function
+void handlePlayMelody() { 
+  DonePlaying = false;
+  PlayAudio(MelodyFolder, currentMelody, RandomPlayOn, MelodyCount); 
 }
 
-// Simplified audio handlers using the consolidated playAudio function
-void handlePlayMelody() { playAudio(MelodyFolder, currentMelody, MelodyCount); }
-void handlePlayAtos() { playAudio(AtosFolder, currentAtos, AtosCount); }
-void handlePlayVA() { playAudio(VAFolder, currentVA, VACount); }
+void handlePlayAtos() { 
+  DonePlaying = false;
+  PlayAudio(AtosFolder, currentAtos, RandomPlayOn, AtosCount); 
+}
+
+void handlePlayVA() { 
+  DonePlaying = false;
+  PlayAudio(VAFolder, currentVA, RandomPlayOn, VACount); 
+}
 
 // Optimized door chime function
 void DoorChime() {
-    if (!DonePlaying || !AtosLastPlayed) return;
+  // Early return if conditions are not met
+  if (!DonePlaying || !AtosLastPlayed) {
+    return;
+  }
     
-    Serial.println(F("\n====Door Chime playing===="));
-    DonePlaying = AtosLastPlayed = false;
-    
-    playAudio(DoorChimeFolder, currentDoorChime, DoorChimeCount);
-    
-    if (playbackMode == "sequence" && !sequenceInProgress) {
-        triggerSequencePlay();
-    }
+  Serial.println(F("\n====Door Chime playing===="));
+  DonePlaying = false;
+  AtosLastPlayed = false;
+  
+  // Play door chime based on current selection or random mode
+  PlayAudio(DoorChimeFolder, currentDoorChime, RandomPlayOn, DoorChimeCount);
+  
+  // Check if sequence mode is active and not already in progress
+  if (playbackMode == "sequence" && !sequenceInProgress) {
+    triggerSequencePlay();
+  }
 }
 
-/**
- * Trigger sequence play via the queue
- */
+//Trigger sequence play via the queue
 void triggerSequencePlay() {
   Serial.println(F("## Sequence mode active ##"));
   
@@ -1284,7 +1132,7 @@ void triggerSequencePlay() {
   }
 }
 
-//================================MP3-Player-Sleep=============================
+//Put the DFPlayer to sleep function
 void DFPSleep() {
   if (DonePlaying) {
     myDFPlayer.sleep();
@@ -1297,46 +1145,42 @@ void DFPSleep() {
 //===============================================================
 
 void CheckDFPStatus(){
-
-        if (myDFPlayer.available()) {;printDetail(myDFPlayer.readType(), myDFPlayer.read());}
-}
+  static unsigned long lastCheck = 0;
+  unsigned long currentMillis = millis();
+  // Only check status every 150ms to reduce overhead
+  if (currentMillis - lastCheck >= 150) {
+    lastCheck = currentMillis; 
+    if (myDFPlayer.available()) {printDetail(myDFPlayer.readType(), myDFPlayer.read());}}
+    }
 
 void printDetail(uint8_t type, int value){
   switch (type) {
     case TimeOut:
-      Serial.println(F("Time Out!"));
+      Serial.println(F("\nTime Out!"));
       break;
     case WrongStack:
-      Serial.println(F("Stack Wrong!"));
+      Serial.println(F("\nStack Wrong!"));
       break;
     case DFPlayerCardInserted:
-      Serial.println(F("Card Inserted!"));
+      Serial.println(F("\nCard Inserted!"));
       break;
     case DFPlayerCardRemoved:
-      Serial.println(F("Card Removed!"));
+      Serial.println(F("\nCard Removed!"));
       break;
     case DFPlayerCardOnline:
-      Serial.println(F("Card Online!"));
+      Serial.println(F("\nCard Online!"));
       break;
     case DFPlayerUSBInserted:
-      Serial.println("USB Inserted!");
+      Serial.println(F("\nUSB Inserted!"));
       break;
     case DFPlayerUSBRemoved:
-      Serial.println("USB Removed!");
+      Serial.println(F("\nUSB Removed!"));
       break;
     case DFPlayerPlayFinished:
-      Serial.print(F("Number:"));
+      Serial.print(F("\nNumber:"));
       Serial.print(value);
       Serial.println(F(" Play Finished!"));
       DonePlaying = true;
-
-      //old code, new code is in handleSequencePlay()
-    /* if (playbackMode == "sequence" && value == currentAtos) {
-        // Only advance to next station if the ATOS announcement finished
-        Serial.println(F("Sequence mode: Advancing to next station"));
-        handleSequencePlay();
-      }
-      */
       break;
     case DFPlayerError:
       Serial.print(F("DFPlayerError:"));
@@ -1354,13 +1198,13 @@ void printDetail(uint8_t type, int value){
           Serial.println(F("Check Sum Not Match"));
           break;
         case FileIndexOut:
-          Serial.println(F("File Index Out of Bound"));
+          Serial.println(F("\nFile Index Out of Bound"));
           break;
         case FileMismatch:
-          Serial.println(F("Cannot Find File"));
+          Serial.println(F("\nCannot Find File"));
           break;
         case Advertise:
-          Serial.println(F("In Advertise"));
+          Serial.println(F("\nIn Advertise"));
           break;
         default:
           break;
@@ -1381,9 +1225,9 @@ void setupWebServerTask() {
     xTaskCreatePinnedToCore(
         webServerTask,
         "serverLoop",
-        30000,
+        30000,// stack size
         NULL,
-        1,
+        10,// priority
         NULL,
         CONFIG_ASYNC_TCP_RUNNING_CORE
     );
@@ -1425,13 +1269,13 @@ void setupWebServer() {
       // Random play logic
       RandomPlayOn = true;
       int randomTrack = random(1, VACount + 1);
-      PlayCurrentAudio(VAFolder, randomTrack);
+      PlayAudio(VAFolder, randomTrack, false, 0);
     }
     else { 
       // "selected" mode or any other mode - just play current selection
       // Don't advance sequences from the UI button
       RandomPlayOn = false;
-      PlayCurrentAudio(VAFolder, currentVA);
+      PlayAudio(VAFolder, currentVA, false, 0);
     }
     
     server.send(200, "text/plain", "Playing announcement");
@@ -1706,6 +1550,7 @@ void setupWebServer() {
 
 void buttonHandlerTask(void * parameter) {
   for(;;) {
+   
     handleButton();
     CheckDFPStatus();
     DoorChime();
@@ -1850,9 +1695,7 @@ void loadDeviceState() {
     }
 
     // Print current stored values
-    Serial.println(F("\nStored values:"));
-    Serial.printf("Random Play: %s\n", doc["randomPlay"].as<bool>() ? "ON" : "OFF");
-    Serial.printf("Volume: %d\n", doc["volume"].as<int>());
+
     
     // Restore state with careful error handling
     RandomPlayOn = doc["randomPlay"].isNull() ? false : doc["randomPlay"].as<bool>();
@@ -1864,6 +1707,12 @@ void loadDeviceState() {
 
     // Apply volume
     myDFPlayer.volume(globalVolume);
+
+    Serial.println(F("\nStored values:"));
+    Serial.printf("Random Play: %s\n", doc["randomPlay"].as<bool>() ? "ON" : "OFF");
+    Serial.printf("Volume: %d\n", doc["volume"].as<int>());
+    Serial.printf_P(PSTR("Current Melody: %d, Current Atos: %d, Current DoorChime: %d, Current VA: %d\n"), 
+                currentMelody, currentAtos, currentDoorChime, currentVA);
 
     // Safely set playback mode with a default if not present
     playbackMode = doc["playbackMode"].isNull() ? "selected" : doc["playbackMode"].as<String>();
@@ -2021,7 +1870,7 @@ void handleFileUpload() {
     totalBytes = 0;//set the total bytes to 0
     uploadError = ""; // Clear previous errors
     String filename = upload.filename;//get the filename
-    Serial.println(F("\n==========Config Upload Utility=========="));
+    Serial.println(F("\n=============== Config Upload Utility ==============="));
     Serial.printf_P(PSTR("Upload Start: %s\n"), filename.c_str());
     
     // Simply check if this is a JSON file - assume all JSON uploads are config files
@@ -2138,12 +1987,12 @@ void handleFileUpload() {
         
         if (configLoaded) {
           Serial.println(F("New configuration loaded successfully"));
-          for (int i = 0; i < 41; i++) Serial.print("=");Serial.println();// print 41 equal signs
+          for (int i = 0; i < 53; i++) Serial.print("=");Serial.println();// print closing line for config upload utility
           // Select first available options from the new config
           selectFirstAvailableOptions();
         } else {
           Serial.println(F("Failed to load new configuration"));
-          for (int i = 0; i < 41; i++) Serial.print("=");Serial.println();// print 41 equal signs
+          for (int i = 0; i < 53; i++) Serial.print("=");Serial.println();// print closing line for config upload utility
           uploadError = "Failed to load new configuration";
         }
       }
@@ -2729,6 +2578,8 @@ void processCommand() {
         Serial.printf_P(PSTR("Current Line: %s\n"), currentStation.stationCodeLine);
         Serial.printf_P(PSTR("Current Station: %s (%s)\n"), currentStation.stationNameJa, currentStation.stationNameEn);
         Serial.printf_P(PSTR("Current Track: %s\n"), currentStation.trackKey);
+        Serial.printf_P(PSTR("Current Melody: %d, Current Atos: %d, Current DoorChime: %d, Current VA: %d\n"), 
+                currentMelody, currentAtos, currentDoorChime, currentVA);
         Serial.printf_P(PSTR("Volume: %d/30\n"), globalVolume);
         Serial.printf_P(PSTR("WiFi Status: %s\n"), WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected");
         if (WiFi.status() == WL_CONNECTED) {
@@ -2820,9 +2671,9 @@ void processCommand() {
                     String trackList = "";
                     
                     for (JsonArray trackArray : tracks) {
-                        int trackNum = trackArray[0].as<int>();
+                        String trackNum = trackArray[0].as<String>();
                         if (trackList.length() > 0) trackList += ", ";
-                        trackList += "track" + String(trackNum);
+                        trackList += trackNum;
                     }
                     
                     Serial.printf_P(PSTR("  - %s (%s, %s) - Tracks: %s\n"), 
