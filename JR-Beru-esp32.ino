@@ -23,7 +23,7 @@ void printDetail(uint8_t type, int value);
 //================================
 // Global Configuration Constants
 //================================
-#define FW_VERSION      "ESP32-MCU-R0.4.12 WebUI-R3.2.6"  // Current firmware version
+#define FW_VERSION      "ESP32-MCU-R0.4.15 WebUI-R3.2.7"  // Current firmware version
 
 // Audio folder mappings on SD card
 int MelodyFolder = 1;    // /01/ - Contains departure melodies
@@ -33,13 +33,12 @@ int VAFolder = 4;        // /04/ - Contains platform announcements
 int FileCount; 
 // Volume configuration
 int globalVolume = 22;   // Initial volume (range: 0-30)
-
 // Track counters - stores number of files in each folder
 int MelodyCount = 1;     // Total number of melody files
 int AtosCount = 1;       // Total number of ATOS files
 int DoorChimeCount = 1;  // Total number of door chime files
 int VACount = 1;         // Total number of platform announcement files
-
+//current audio config
 int currentMelody = 1;   //current melody
 int currentAtos = 1;    //current atos
 int currentDoorChime = 1; //current door chime
@@ -146,8 +145,6 @@ struct DeviceState {
 };
 
 
-
-
 //===============================================================
 // WiFi and Server Setup
 //===============================================================
@@ -163,7 +160,7 @@ void setupWiFiManager() {
   wifiManager.setAPStaticIPConfig(IPAddress(192,168,4,1), IPAddress(192,168,4,1), IPAddress(255,255,255,0));
   wifiManager.setSaveConfigCallback(saveConfigCallback);
 
-  // Set WiFi mode explicitly
+  // Set WiFi mode to station mode
   WiFi.mode(WIFI_STA);
   
   // First try to connect using saved credentials
@@ -216,9 +213,9 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   delay(600);
   Serial.println(F("\n\n\n\n\n\n\n\n\n"));
-  Serial.println(F("\n==================="));
-  Serial.println(F(" JR-Beru Booting "));
-  Serial.println(F("==================="));
+  Serial.println(F("================================="));
+  Serial.println(F("|        JR-Beru Booting        |"));
+  Serial.println(F("================================="));
   Serial.printf_P(PSTR("Firmware Version: %s\n"), FW_VERSION);
 
   // Initialize MP3 player
@@ -262,16 +259,15 @@ void setup() {
                currentStation.stationNameEn.c_str(), 
                currentStation.trackKey.c_str());
 
-  // Play random melody as boot-up sound
-  PlayRandomAudio(MelodyFolder,MelodyCount);delay(500);myDFPlayer.disableLoop();
 
-  // Create button handler task on Core 0
+
+  // Create button handler task on Core 1
   xTaskCreatePinnedToCore(
     buttonHandlerTask,
     "buttonHandler",
-    20192,  // Stack size
+    4096,  // Stack size
     NULL,
-    23,     // Priority
+    22,     // Priority
     NULL,
     1  // runs on core
   );
@@ -285,9 +281,12 @@ void setup() {
     setupOTA();
     setupWebServer();
   }
+
+    // Play random melody as boot-up sound
+  PlayRandomAudio(MelodyFolder,MelodyCount);delay(900);myDFPlayer.disableLoop();
   
-  // Continue with normal operation regardless of WiFi status
-  Serial.println(F("========Boot up Completed!========"));
+  //print boot up completed in serial monitor
+  Serial.println(F("\n========Boot up Completed!========\n"));
 
   // Initial system health check
   checkSysHealth();
@@ -320,13 +319,11 @@ void setup() {
 
 void loop()
 {
-  // Handle serial input for the shell
+  // ---- Handle serial input for the shell ----
   while (Serial.available()) {
     char inChar = (char)Serial.read();
-    
     // Echo the character back to the terminal
     Serial.print(inChar);
-    
     // If newline or carriage return, command is complete
     if (inChar == '\n' || inChar == '\r') {
       Serial.println(); // Force a new line
@@ -336,13 +333,14 @@ void loop()
       serialCommand += inChar;
     }
   }
-  
   // Process command if complete
   if (commandComplete) {
     processCommand();
     serialCommand = ""; // Clear the command buffer
     commandComplete = false;
   }
+//------------------------------------------------
+
 
   // Only handle web-related tasks if WiFi is connected
   if (WiFi.status() == WL_CONNECTED) {
@@ -355,165 +353,129 @@ void loop()
 }
 
 //===============================================================
-//  HTML Page
+//  Construct the HTML Page
 //===============================================================
 void handleRoot() {
   String html = "<html><head>"
                 "<meta charset='UTF-8'>"
                 "<meta name='viewport' content='width=device-width, initial-scale=1'>"
                 "<style>"
-                "* { box-sizing: border-box; margin: 0; padding: 0; }"
-                "body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; }"
+                "* {box-sizing:border-box;margin:0;padding:0}"
+                "body {font:400 1em/1.6 'Segoe UI',Roboto,Arial,sans-serif;background:#f5f5f5;color:#333}"
                 
-                // Navbar 
-                ".navbar { position: fixed; top: 0; left: 0; right: 0; background: #2c3e50; color: white; "
-                "padding: 8px; text-align: center; z-index: 1000; }"
-                ".navbar h1 { font-size: 1.5rem; font-weight: 500; margin: 0; }"
+                // Layout elements
+                ".navbar {position:fixed;top:0;left:0;right:0;z-index:1000;background:#2c3e50;color:#fff;padding:8px;text-align:center}"
+                ".navbar h1 {font-size:1.5rem;font-weight:500;margin:0}"
+                ".container {max-width:800px;margin:80px auto 100px;padding:20px}"
+                ".panel {background:#fff;border-radius:10px;padding:15px;margin-bottom:15px;box-shadow:0 2px 4px rgba(0,0,0,.05)}"
+                ".panel-header {font-size:1.2rem;color:#2c3e50;margin-bottom:12px;font-weight:700}"
+                ".footer {position:fixed;bottom:0;left:0;right:0;background:#2c3e50;color:#fff;text-align:center;padding:1rem;font-size:.8rem}"
+                ".version-info {text-align:center;color:#666;font-size:.8rem;margin-top:20px}"
                 
-                // Main container
-                ".container { max-width: 800px; margin: 80px auto 100px; padding: 20px; }"
+                // Controls
+                ".control-group {display:flex;align-items:center;margin-bottom:12px;gap:10px}"
+                ".control-label {flex:1;font-size:.95rem;color:#555}"
+                ".control-item {display:flex;align-items:center;gap:10px}"
+                ".control-item.right {justify-content:flex-end}"
+                ".control-item label {font-size:.95rem;color:#555}"
                 
-                // Panel and controls - consolidated properties
-                ".panel { background: white; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }"
-                ".panel-header { font-size: 1.2rem; color: #2c3e50; margin-bottom: 12px; font-weight: bold; }"
-                ".control-group { display: flex; align-items: center; margin-bottom: 12px; gap: 10px; }"
-                ".control-label { flex: 1; font-size: 0.95rem; color: #555; }"
+                // Form elements
+                "select {flex:0 0 80px;padding:8px;border:1px solid #ddd;border-radius:6px;background:#fff;font-size:.9rem;color:#333}"
+                ".btn {background:#2196F3;color:#fff;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-size:.9rem;transition:all .3s;display:flex;align-items:center;justify-content:center}"
+                ".btn:hover {filter:brightness(1.1)}"
+                ".btn-compact {padding:6px 12px;font-size:.85rem}"
+                ".btn-primary {background:#2196F3}"
+                ".btn-secondary {background:#757575}"
+                ".btn-warning {background:#e84636}"
                 
-                // Selectors
-                "select { flex: 0 0 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 0.9rem; color: #333; }"
+                // Toggle and volume controls
+                ".toggle-switch {position:relative;display:inline-block;width:40px;height:22px}"
+                ".toggle-switch input {opacity:0;width:0;height:0}"
+                ".slider {position:absolute;cursor:pointer;inset:0;background:#ccc;transition:.4s;border-radius:34px}"
+                ".slider:before {position:absolute;content:'';height:16px;width:16px;left:3px;bottom:3px;background:#fff;transition:.4s;border-radius:50%}"
+                "input:checked+.slider {background:#2196F3}"
+                "input:checked+.slider:before {transform:translateX(18px)}"
+                ".volume-slider {flex:1;-webkit-appearance:none;height:5px;border-radius:5px;background:#ddd;outline:0}"
+                ".volume-slider::-webkit-slider-thumb {-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#2196F3;cursor:pointer}"
+                ".volume-container {grid-column:1/-1;display:flex;align-items:center;gap:15px}"
                 
-                // Toggle switch
-                ".toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; }"
-                ".toggle-switch input { opacity: 0; width: 0; height: 0; }"
-                ".slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }"
-                ".slider:before { position: absolute; content: ''; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }"
-                "input:checked + .slider { background-color: #2196F3; }"
-                "input:checked + .slider:before { transform: translateX(18px); }"
+                // Station sign
+                ".station-sign {background:linear-gradient(180deg,#fff 0%,#f0f0f0 100%);margin:0 0 20px;padding:15px 15px 0;position:relative;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,.05);overflow:hidden}"
+                ".station-content {position:relative;width:100%;display:flex;justify-content:center;max-width:800px;margin:0 auto;padding:0 60px}"
                 
-                // Volume slider
-                ".volume-slider { flex: 1; -webkit-appearance: none; height: 5px; border-radius: 5px; background: #ddd; outline: none; }"
-                ".volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #2196F3; cursor: pointer; }"
+                // Line marker
+                ".line-marker {position:absolute;top:0;transform:translateX(calc(-100% - 10px));width:48px;height:66px;background:" + currentStation.lineMarkerBgColor + ";border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.2)}"
+                ".markerStationCode,.markerLineCode {font-weight:700;font-size:14px}"
+                ".markerStationCode {position:absolute;top:0;left:0;right:0;color:#fff;text-align:center}"
+                ".markerLineCode {color:#000;line-height:1;margin-bottom:2px}"
                 
-                // Buttons
-                ".btn { background: #2196F3; color: white; border: none; padding: 10px 15px; border-radius: 6px; "
-                "cursor: pointer; font-size: 0.9rem; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }"
-                ".btn:hover { filter: brightness(1.1); }"
-                ".btn-compact { padding: 6px 12px; font-size: 0.85rem; }"
-                ".btn-primary { background: #2196F3; }"
-                ".btn-secondary { background: #757575; }"
-                ".btn-warning { background: #e84636; }"
+                // Station number
+                ".station-number-container {position:absolute;top:20px;inset-inline:3px;bottom:3px;background:" + currentStation.lineNumberBgColor + ";border-radius:5px;padding:3.7px}"
+                ".station-number-inner {background:#fff;border-radius:2px;height:100%;width:100%;display:flex;flex-direction:column;justify-content:center;align-items:center}"
+                ".line-number {color:#000;font-weight:700;font-size:19px;line-height:.7}"
                 
-                // Footer
-                ".footer { position: fixed; bottom: 0; left: 0; right: 0; background: #2c3e50; color: #fff; "
-                "text-align: center; padding: 1rem; font-size: 0.8rem; }"
+                // Station info
+                ".station-info {position:relative;display:flex;flex-direction:column;align-items:center;width:auto;min-width:200px;margin:0 auto}"
+                ".staName-ja,.staName-hiragana,.staName-ko {text-align:center}"
+                ".staName-ja {position:relative;display:inline-block;font-size:42px;font-weight:700;line-height:1.2;font-family:'MS Gothic','Yu Gothic',sans-serif;white-space:nowrap}"
+                ".staName-hiragana {font-size:16px;color:#333;font-weight:700}"
+                ".staName-ko {font-size:14px;color:#666;margin-bottom:6px}"
                 
-                // Version info
-                ".version-info { text-align: center; color: #666; font-size: 0.8rem; margin-top: 20px; }"
+                // Ward label
+                ".ward-label {position:absolute;top:15px;right:50px;display:flex;gap:1px}"
+                ".ward-box,.ward-text {width:16px;height:16px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:12px}"
+                ".ward-box {background:#fff;color:#000;border:1px solid #000}"
+                ".ward-text {background:#000;color:#fff}"
                 
-                // Station sign - maintained position property for ward-label positioning
-                ".station-sign { background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%); "
-                "margin: 0 0 20px 0; padding: 15px 15px 0; position: relative; border-radius: 10px; "
-                "box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; }"
+                // Direction elements
+                ".direction-bar {background:" + currentStation.directionBarBgColor + ";height:32px;display:flex;justify-content:space-between;align-items:center;color:#fff;position:relative;clip-path:polygon(0 0,calc(100% - 15px) 0,100% 50%,calc(100% - 15px) 100%,0 100%);overflow:visible}"
+                ".station-indicator {position:absolute;top:0;left:50%;transform:translateX(-50%);width:32px;height:32px;background:" + currentStation.lineNumberBgColor + "}"
                 
-                // Content container
-                ".station-content { position: relative; width: 100%; display: flex; justify-content: center; "
-                "max-width: 800px; margin: 0 auto; padding: 0 60px; }"
+                // Direction stations
+                ".direction-left,.direction-right {width:33%}"
+                ".direction-left {font-weight:700;padding-left:15px;text-align:left}"
+                ".direction-right {font-weight:700;padding-right:20px;text-align:right}"
+                ".direction-station {font-size:16px;font-weight:700}"
                 
-                // Line marker - kept as is, contains dynamic color
-                ".line-marker { position: absolute; top: 0; transform: translateX(calc(-100% - 10px)); "
-                "width: 48px; height: 66px; background: " + currentStation.lineMarkerBgColor + "; border-radius: 8px; "
-                "box-shadow: 0 2px 4px rgba(0,0,0,0.2); }"
+                // English station names
+                ".staName-en {font-size:16px;color:#333}"
+                ".staName-en.current {font-weight:700}"
+                ".staName-en-left {width:33%;text-align:left}"
+                ".staName-en-center {width:33%;text-align:center}"
+                ".staName-en-right {width:33%;text-align:right}"
+                ".station-names-container {display:flex;justify-content:space-between;padding:5px 15px}"
                 
-                // Consolidated line codes
-                ".line-code-akb, .line-code-jy { font-weight: bold; font-size: 14px; }"
-                ".line-code-akb { position: absolute; top: 0; left: 0; right: 0; color: white; text-align: center; }"
-                ".line-code-jy { color: #000; line-height: 1; margin-bottom: 2px; }"
+                // Shared elements
+                ".direction-bar,.station-names-container {width:100%;max-width:700px;margin:0 auto}"
                 
-                // Station number - kept as is, contains dynamic color
-                ".station-number-container { position: absolute; top: 20px; left: 3px; right: 3px; bottom: 3px; "
-                "background: " + currentStation.lineNumberBgColor + "; border-radius: 5px; padding: 3.7px; }"
-                ".station-number-inner { background: white; border-radius: 2px; height: 100%; width: 100%; "
-                "display: flex; flex-direction: column; justify-content: center; align-items: center; }"
-                ".line-number { color: #000; font-weight: bold; font-size: 19px; line-height: 0.7; }"
+                // Grid layouts
+                ".controls-grid,.button-group,.station-selectors {display:grid;gap:12px}"
+                ".controls-grid {margin:0}"
+                ".button-group {grid-template-columns:repeat(3,1fr);gap:8px}"
+                ".station-selectors {grid-template-columns:repeat(3,1fr);gap:8px}"
                 
-                // Station info - consolidated text alignments
-                ".station-info { position: relative; display: flex; flex-direction: column; align-items: center; width: auto; min-width: 200px; margin: 0 auto; }"
-                ".staName-ja, .staName-hiragana, .staName-ko { text-align: center; }"
-                ".staName-ja { position: relative; display: inline-block; font-size: 42px; font-weight: bold; "
-                "line-height: 1.2; font-family: 'MS Gothic', 'Yu Gothic', sans-serif; white-space: nowrap; }"
-                ".staName-hiragana { font-size: 16px; color: #333;font-weight: bold; }"
-                ".staName-ko { font-size: 14px; color: #666; margin-bottom: 6px; }"
+                // Miscellaneous
+                ".config-info {font-size:.85rem;color:#666;background:#f5f5f5;border-radius:4px}"
+                ".sequence-controls {display:grid;grid-template-columns:2fr 1fr;gap:8px}"
+                ".sequence-buttons {display:flex;justify-content:flex-end}"
+                ".play-button-container {display:flex;justify-content:flex-end;grid-column:2/3}"
                 
-                // Ward label - critical for positioning, kept exactly as is
-                ".ward-label { position: absolute; top: 15px; right: 50px; display: flex; gap: 1px; }"
-                ".ward-box { background: white; color: black; width: 16px; height: 16px; "
-                "border: 1px solid black; border-radius: 2px; display: flex; align-items: center; "
-                "justify-content: center; font-size: 12px; }"
-                ".ward-text { background: black; color: white; width: 16px; height: 16px; "
-                "border-radius: 2px; display: flex; align-items: center; justify-content: center; "
-                "font-size: 12px; }"
-                
-                // Direction bar - kept as is, contains dynamic color
-                ".direction-bar { background: " + currentStation.directionBarBgColor + "; height: 32px; "
-                "display: flex; justify-content: space-between; align-items: center; color: white; position: relative; "
-                "clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%); "
-                "overflow: visible; }"
-                
-                // Station indicator - kept as is, contains dynamic color
-                ".station-indicator { position: absolute; top: 0; left: 50%; transform: translateX(-50%); "
-                "width: 32px; height: 32px; background: " + currentStation.lineNumberBgColor + "; }"
-                
-                // Direction stations - simplified
-                ".direction-left, .direction-right { width: 33%; }"
-                ".direction-left { font-weight: bold; padding-left: 15px; text-align: left; }"
-                ".direction-right { font-weight: bold; padding-right: 20px; text-align: right; }"
-                ".direction-station { font-size: 16px; font-weight: bold; }"
-                
-                // English station names - consolidated styles
-                ".staName-en { font-size: 16px; color: #333; }"
-                ".staName-en.current { font-weight: bold; }"
-                ".staName-en-left { width: 33%; text-align: left; }"
-                ".staName-en-center { width: 33%; text-align: center; }"
-                ".staName-en-right { width: 33%; text-align: right; }"
-                ".station-names-container { display: flex; justify-content: space-between; padding: 5px 15px; }"
-                
-                // Direction bar and names container - kept as is
-                ".direction-bar, .station-names-container { width: 100%; max-width: 700px; margin: 0 auto; }"
-                
-                // Control layout - consolidated grid styles
-                ".controls-grid, .button-group, .station-selectors { display: grid; gap: 12px; }"
-                ".controls-grid { margin: 0; }"
-                ".button-group { grid-template-columns: repeat(3, 1fr); gap: 8px; }"
-                ".station-selectors { grid-template-columns: repeat(3, 1fr); gap: 8px; }"
-                
-                // Other control classes 
-                ".control-item { display: flex; align-items: center; gap: 10px; }"
-                ".control-item.right { justify-content: flex-end; }"
-                ".control-item label { font-size: 0.95rem; color: #555; }"
-                ".volume-container { grid-column: 1 / -1; display: flex; align-items: center; gap: 15px; }"
-                ".config-info { font-size: 0.85rem; color: #666; background: #f5f5f5; border-radius: 4px; }"
-                
-                // Sequence controls 
-                ".sequence-controls { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }"
-                ".sequence-buttons { display: flex; justify-content: flex-end; }"
-                ".play-button-container { display: flex; justify-content: flex-end; grid-column: 2 / 3; }"
-                
-                // Consolidated media queries
-                "@media (max-width: 800px) {"
-                "  .container { padding: 10px; margin-top: 70px; }"
-                "  .panel { padding: 12px; }"
-                "  .control-group { margin-bottom: 8px; gap: 8px; }"
-                "  .control-label { font-size: 0.9rem; flex: 0 0 110px; }"
-                "  .btn-compact, select { width: 100%; }"
-                "  .btn-compact { padding: 8px; font-size: 0.8rem; }"
-                "  .controls-grid { gap: 8px; }"
-                "  .station-selectors { grid-template-columns: 1fr; }"
+                // Media queries
+                "@media (max-width:800px){"
+                ".container{padding:10px;margin-top:70px}"
+                ".panel{padding:12px}"
+                ".control-group{margin-bottom:8px;gap:8px}"
+                ".control-label{font-size:.9rem;flex:0 0 110px}"
+                ".btn-compact,select{width:100%}"
+                ".btn-compact{padding:8px;font-size:.8rem}"
+                ".controls-grid{gap:8px}"
+                ".station-selectors{grid-template-columns:1fr}"
                 "}"
                 
                 "</style></head><body>"
                 
                 "<div class='navbar'><h1>" + 
-                String("\xE7\x99\xBA\xE8\xBB\x8A\xE3\x83\x99\xE3\x83\xAB") + // 発車ベル
+                String("発車ベル") + // 発車ベル
                 "</h1></div>"
                 "<div class='container'>";
 
@@ -521,10 +483,10 @@ void handleRoot() {
   html += "<div class='station-sign'>"
           "<div class='station-content'>"
           "<div class='line-marker'>"
-          "<div class='line-code-akb'>" + currentStation.lineCode + "</div>"
+          "<div class='markerStationCode'>" + currentStation.lineCode + "</div>"
           "<div class='station-number-container'>"
           "<div class='station-number-inner'>"
-          "<div class='line-code-jy'>" + currentStation.stationCodeLine + "</div>"
+          "<div class='markerLineCode'>" + currentStation.stationCodeLine + "</div>"
           "<div class='line-number'>" + currentStation.stationNumber + "</div>"
           "</div>"
           "</div>"
@@ -554,7 +516,7 @@ void handleRoot() {
           "<span class='staName-en staName-en-right'>" + currentStation.nextStationEn + "</span>"
           "</div>";
 
-  // Add the Sequence Control panel first
+  // Sequence Control panel
   html += "<div class='panel'>"
           "<div class='panel-header'>Sequence Control</div>"
           "<div class='controls-grid'>"
@@ -649,7 +611,7 @@ void handleRoot() {
 
   // Footer
   html += "<div class='footer'>&copy; 2025 " + 
-          String("\xE7\x99\xBA\xE8\xBB\x8A\xE3\x83\x99\xE3\x83\xAB") + // 発車ベ尔
+          String("発車ベル") + // 発車ベル
           "</div>";
 
   // JavaScript
@@ -686,32 +648,34 @@ void handleRoot() {
           "const uploadConfig = () => {"
           "  const file = $('configFile').files[0];"
           "  if (!file) return;"
+          "  if (file.size > 102400) return alert('File over max size: 100KB');"
           "  const fd = new FormData();"
           "  fd.append('config', file);"
           "  fetch('/upload', {method: 'POST', body: fd})"
-          "    .then(response => !response.ok ? response.json().then(data => { throw new Error(data.error || 'Unknown error'); }) : response)"
-          "    .then(() => forceConfigReload())"
-          "    .catch(e => { console.error('Error:', e); alert('Upload failed: ' + e.message); });"
+          "    .then(response => response.json())"
+          "    .then(data => {if (data.error) throw new Error(data.error);return forceConfigReload();})"
+          "    .catch(e => { console.error('Error:', e); alert(e.message || 'Upload failed'); });"
           "};"
-          
+          //delete config
           "const deleteConfig = () => {"
-          "  if (!confirm('Delete configuration file?')) return;"
+          "  if (!confirm('Delete config file?')) return;"
           "  api('/deleteConfig')"
           "    .then(r => r.ok ? r.text() : Promise.reject('Status: ' + r.status))"
           "    .then(() => forceConfigReload())"
-          "    .then(() => alert('Configuration deleted successfully'))"
+          "    .then(() => alert('Config deleted successfully'))"
           "    .catch(e => alert('Failed to delete configuration: ' + e));"
           "};"
-          
+          //force config reload
           "const forceConfigReload = () => { cachedConfig = null; return loadConfig(); };"
           
-          // Selectors management
+          // Selectors management>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+          //populate selector
           "const populateSelector = (id, items, selected) => {"
           "  const sel = $(id);"
           "  if (!sel) return;"
           "  sel.innerHTML = `<option>${sel.options[0].text}</option>${populateOptions(items, selected)}`;"
           "};"
-          
+          //update station select
           "const updateStationSelect = () => {"
           "  const line = $('lineSelect').value;"
           "  const stations = cachedConfig?.lines?.[line]?.stations;"
@@ -725,7 +689,7 @@ void handleRoot() {
           "    }"
           "  }"
           "};"
-          
+          //update track select
           "const updateTrackSelect = () => {"
           "  const line = $('lineSelect').value;"
           "  const station = $('stationSelect').value;"
@@ -745,14 +709,14 @@ void handleRoot() {
           "      updateStationSign();"
           "    }"
           "  }"
-          "};"
-          
-          // Station sign update
+          "};"          
+          // Station sign update>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+          //update line marker position
           "const updateLineMarkerPosition = () => {"
           "  const stationNameJa = $q('.staName-ja');"
           "  const lineMarker = $q('.line-marker');"
           "  const stationContent = $q('.station-content');"
-          "  const stationCode = $q('.line-code-akb');"
+          "  const stationCode = $q('.markerStationCode');"
           "  if (!stationNameJa || !lineMarker || !stationContent) return;"
           "  if (stationCode && (!stationCode.textContent || stationCode.textContent.trim() === '')) {"
           "    lineMarker.style.backgroundColor = 'transparent';"
@@ -766,7 +730,7 @@ void handleRoot() {
           "  const offset = stationNameJa.getBoundingClientRect().left - stationContent.getBoundingClientRect().left;"
           "  lineMarker.style.left = offset + 'px';"
           "};"
-          
+          //update station sign
           "const updateStationSign = () => {"
           "  if (updateInProgress) return;"
           "  updateInProgress = true;"
@@ -775,12 +739,12 @@ void handleRoot() {
           "  const track = $('trackSelect').value;"
           "  if (!line || !station || !track || track === 'Select Track') {"
           "    updateInProgress = false;"
-          "    return;"
-          "  }"
+          "    return;}"
+          //check if required selectors are present
           "  const requiredSelectors = ["
           "    '.line-marker', '.station-number-container', '.station-indicator', '.direction-bar',"
           "    '.staName-ja', '.staName-hiragana', '.staName-ko', '.ward-box',"
-          "    '.line-code-akb', '.line-code-jy', '.line-number',"
+          "    '.markerStationCode', '.markerLineCode', '.line-number',"
           "    '.direction-left .direction-station', '.direction-right .direction-station',"
           "    '.staName-en-left', '.staName-en-center', '.staName-en-right'"
           "  ];"
@@ -820,8 +784,8 @@ void handleRoot() {
           "      setTextContent('.staName-hiragana', stInfo[2]);"
           "      setTextContent('.staName-ko', stInfo[3]);"
           "      setTextContent('.ward-box', stInfo[4]);"
-          "      setTextContent('.line-code-akb', stInfo[0]);"
-          "      setTextContent('.line-code-jy', trackData[1]);"
+          "      setTextContent('.markerStationCode', stInfo[0]);"
+          "      setTextContent('.markerLineCode', trackData[1]);"
           "      setTextContent('.line-number', trackData[2]);"
                 // Update direction info
           "      setTextContent('.direction-left .direction-station', trackData[4]?.[0] || '');"
@@ -972,7 +936,7 @@ void UpdateFileCount() {
   };
   
   for (const auto& folder : folders) {
-    *folder.countVar = CheckFileInFolder(folder.folder);
+    *folder.countVar = indexFileInFolder(folder.folder);
     Serial.printf("%s Files: %d\n", folder.name, *folder.countVar);
   }
   
@@ -1012,10 +976,10 @@ int generateRandomNumber(int min, int max) {
 
 
   //===============================================================
-  // Check File In Folder (with error correction because of DFPlayer bug)
+  // Index File In Folder (with error correction because of DFPlayer bug)
   //===============================================================
 
-int CheckFileInFolder(int folder) {
+int indexFileInFolder(int folder) {
     int fileCount = 0;
     const int MAX_RETRIES = 3;
 
@@ -1099,23 +1063,16 @@ void handlePlayVA() {
 
 // Optimized door chime function
 void DoorChime() {
-  // Early return if conditions are not met
-  if (!DonePlaying || !AtosLastPlayed) {
-    return;
-  }
-    
-  Serial.println(F("\n====Door Chime playing===="));
-  DonePlaying = false;
-  AtosLastPlayed = false;
-  
-  // Play door chime based on current selection or random mode
-  PlayAudio(DoorChimeFolder, currentDoorChime, RandomPlayOn, DoorChimeCount);
-  
-  // Check if sequence mode is active and not already in progress
-  if (playbackMode == "sequence" && !sequenceInProgress) {
-    triggerSequencePlay();
+  if (DonePlaying && AtosLastPlayed) {
+    Serial.println(F("\n====Door Chime playing===="));
+    DonePlaying = AtosLastPlayed = false;
+    PlayAudio(DoorChimeFolder, currentDoorChime, RandomPlayOn, DoorChimeCount);
+    if (playbackMode == "sequence" && !sequenceInProgress) {
+      triggerSequencePlay();
+    }
   }
 }
+
 
 //Trigger sequence play via the queue
 void triggerSequencePlay() {
@@ -1218,8 +1175,6 @@ void printDetail(uint8_t type, int value){
 
 
 
-
-
 // Task management for web server
 void setupWebServerTask() {
     xTaskCreatePinnedToCore(
@@ -1231,12 +1186,6 @@ void setupWebServerTask() {
         NULL,
         CONFIG_ASYNC_TCP_RUNNING_CORE
     );
-}
-
-// Memory monitoring
-void checkHeap() {
-    Serial.printf("Free heap: %d\n", ESP.getFreeHeap());
-    Serial.printf("Free PSRAM: %d\n", ESP.getFreePsram());
 }
 
 void webServerTask(void * parameter) {
@@ -1254,7 +1203,7 @@ void setupWebServer() {
   server.on("/", HTTP_GET, handleRoot);
   server.enableCORS(true);
   
-
+// Play VA server endpoint
   server.on("/playVA", HTTP_GET, []() {
     String mode = server.arg("mode");
     
@@ -1280,7 +1229,7 @@ void setupWebServer() {
     
     server.send(200, "text/plain", "Playing announcement");
   });
-  
+// Set Volume server endpoint
   server.on("/setVolume", HTTP_GET, []() {
     String value = server.arg("value");
     if (value != "") {
@@ -1291,6 +1240,7 @@ void setupWebServer() {
     server.send(200, "text/plain", "Volume set to " + String(globalVolume));
   });
 
+// Update Config server endpoint
   server.on("/updateConfig", HTTP_GET, []() {
     int melodyValue = server.arg("melody").toInt();
     int atosValue = server.arg("atos").toInt();
@@ -1302,7 +1252,7 @@ void setupWebServer() {
     currentDoorChime = doorchimeValue;
     currentVA = platformValue;
 
-    Serial.println(F("===Audio Selection Updated!===="));
+    Serial.println(F("\n===Audio Selection Updated!===="));
     Serial.print(F("Melody: ")); Serial.println(currentMelody);
     Serial.print(F("Atos: ")); Serial.println(currentAtos);
     Serial.print(F("DoorChime: ")); Serial.println(currentDoorChime);
@@ -1312,6 +1262,7 @@ void setupWebServer() {
     server.send(200, "text/plain", "Configuration updated");
   });
 
+// Reinitialize DFPlayer server endpoint
   server.on("/reinitDFPlayer", HTTP_GET, []() {
     myDFPlayer.reset();
     Serial.println(F("====DFPlayer Reinitialized!===="));
@@ -1323,7 +1274,7 @@ void setupWebServer() {
 
 // Upload config file handler
   server.on("/upload", HTTP_POST, []() {
-    server.send(200, "text/plain", "File uploaded");
+    server.send(200, "application/json", "{\"success\": true}");
   }, handleFileUpload);
 
   server.on("/downloadConfig", HTTP_GET, []() {
@@ -1336,6 +1287,7 @@ void setupWebServer() {
     }
   });
 
+// Delete Config server endpoint
   server.on("/deleteConfig", HTTP_GET, []() {
     if (!SPIFFS.exists("/station_config.json")) {
         server.send(404, "text/plain", "Config file not found");
@@ -1382,7 +1334,7 @@ void setupWebServer() {
     }
   });
 
-
+// Get Station Config server endpoint
   server.on("/getStationConfig", HTTP_GET, []() {
     if (!configLoaded) loadStationConfig();
     String jsonStr;
@@ -1390,7 +1342,7 @@ void setupWebServer() {
     server.send(200, "application/json", jsonStr);
   });
 
-  // Add this new endpoint in setupWebServer():
+  // Update Station Sign server endpoint
   server.on("/updateStationSign", HTTP_GET, []() {
     const String line = server.arg("line");
     const String station = server.arg("station");
@@ -1424,7 +1376,7 @@ void setupWebServer() {
     server.send(200, "text/plain", "Station sign updated");
   });
 
-  // Add an endpoint to get the current filename:
+  // Get Current Config server endpoint
   server.on("/getCurrentConfig", HTTP_GET, []() {
     // Return config filename, playback mode and volume in a JSON response
     StaticJsonDocument<256> response;
@@ -1437,8 +1389,7 @@ void setupWebServer() {
     server.send(200, "application/json", jsonResponse);
   });
 
-  // First, add new endpoints in setupWebServer():
-
+  // Get Current Selections server endpoint
   server.on("/getCurrentSelections", HTTP_GET, []() {
     // Create a JSON object with current selections
     StaticJsonDocument<200> doc;
@@ -1451,7 +1402,7 @@ void setupWebServer() {
     server.send(200, "application/json", jsonResponse);
   });
 
-  // Add endpoint to get current station
+  // Get Current Station server endpoint
   server.on("/getCurrentStation", HTTP_GET, []() {
     // Create a JSON object with current station information
     StaticJsonDocument<200> doc;
@@ -1474,16 +1425,15 @@ void setupWebServer() {
     server.send(200, "application/json", jsonResponse);
   });
 
-  // Create a new endpoint to set playback mode
-  // Add this in the setupWebServer function
+// Set Playback Mode server endpoint
   server.on("/setPlaybackMode", HTTP_GET, []() {
     String mode = server.arg("mode");
     if (!mode.isEmpty()) {
       // Add detailed logging
-      Serial.printf_P(PSTR("\n===== PLAYBACK MODE CHANGE ======\n"));
+      Serial.printf_P(PSTR("\n\n== PLAYBACK MODE CHANGE ==\n"));
       Serial.printf_P(PSTR("Previous mode: %s\n"), playbackMode.c_str());
       Serial.printf_P(PSTR("Current mode: %s\n"), mode.c_str());
-      for (int i = 0; i < 25; i++) Serial.print("=");Serial.println("\n");// print 25 equal signs
+      for (int i = 0; i < 26; i++) Serial.print("=");Serial.println("\n");// print 26 equal signs
       
       // Reset sequence flag when changing modes
       sequenceInProgress = false;
@@ -1597,10 +1547,8 @@ void loadDeviceState() {
     if (!configLoaded) {
         loadStationConfig();
     }
-    
     // Set default playback mode
     playbackMode = "selected";
-    
     // If no saved state file exists, set defaults from config
     if (!SPIFFS.exists("/device_state.json")) {
         Serial.println(F("No saved state found - using defaults from config"));
@@ -1612,7 +1560,7 @@ void loadDeviceState() {
               firstLine = line.key().c_str();
               break;
           }
-          
+          //check if first line is not empty
             if (!firstLine.isEmpty()) {
                 // Get the first station
           String firstStation;
@@ -1621,7 +1569,7 @@ void loadDeviceState() {
               firstStation = station.key().c_str();
               break;
           }
-          
+          //check if first station is not empty
                 if (!firstStation.isEmpty()) {
                     JsonObject stationData;
                     JsonObject style;
@@ -1639,7 +1587,7 @@ void loadDeviceState() {
                     }
                     
                     // Update currentStation with default values
-          updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());
+                   updateCurrentStation(stationData, trackData, style, firstLine.c_str(), firstStation.c_str(), firstTrack.c_str());
                     saveDeviceState();  // Save these defaults
                     
                     Serial.println(F("Default station set from config"));
@@ -1658,20 +1606,11 @@ void loadDeviceState() {
         return;
     }
 
-    // Read the file and handle potential errors
-    String jsonStr = file.readString();
+    // Parse JSON directly from file stream
+    StaticJsonDocument<512> doc;
+    DeserializationError error = deserializeJson(doc, file);
     file.close();
     
-    if (jsonStr.length() == 0) {
-        Serial.println(F("Empty device state file"));
-        playbackMode = "selected";
-        return;
-    }
-
-    // Try to parse the JSON with extra error handling
-    StaticJsonDocument<512> doc;
-    DeserializationError error = deserializeJson(doc, jsonStr);
-
     if (error) {
         Serial.print("Failed to parse device state: ");
         Serial.println(error.c_str());
@@ -1694,9 +1633,6 @@ void loadDeviceState() {
         return;
     }
 
-    // Print current stored values
-
-    
     // Restore state with careful error handling
     RandomPlayOn = doc["randomPlay"].isNull() ? false : doc["randomPlay"].as<bool>();
     globalVolume = doc["volume"].isNull() ? 22 : doc["volume"].as<int>();
@@ -1796,51 +1732,73 @@ bool validateJsonFile(const char* filename, String& errorMsg) {
     size_t fileSize = file.size();
     Serial.printf("Validating file: %s (%u bytes)\n", filename, fileSize);
     
-    String jsonStr;
-    jsonStr.reserve(fileSize + 1);
+    // Instead of reading the entire file, we'll do a quick structure check
+    // and scan through the file looking for required properties
     
-    // Read file in chunks
-    const size_t BUFFER_SIZE = 1024;
-    char buffer[BUFFER_SIZE];
-    size_t totalRead = 0;
+    // Check for valid JSON start
+    char firstChar = file.read();
+    if (firstChar != '{') {
+        errorMsg = "Invalid format (not a JSON file)";
+        file.close();
+        return false;
+    }
     
-    while (file.available()) {
-        size_t bytesRead = file.readBytes(buffer, BUFFER_SIZE);
-        jsonStr += String(buffer).substring(0, bytesRead);
+    // Count braces while scanning through file
+    int braceCount = 1; // We already read the first one
+    bool propertyFound[sizeof(requiredProps)/sizeof(requiredProps[0])] = {false};
+    
+    // Read in chunks to check brace balance and look for required properties
+    const size_t BUFFER_SIZE = 256;
+    char buffer[BUFFER_SIZE + 1]; // +1 for null termination
+    buffer[BUFFER_SIZE] = '\0';
+    
+    size_t bytesRead;
+    size_t totalRead = 1; // We've already read one character
+    
+    while ((bytesRead = file.read((uint8_t*)buffer, BUFFER_SIZE)) > 0) {
+        // Scan chunk for braces and required properties
+        for (size_t i = 0; i < bytesRead; i++) {
+            if (buffer[i] == '{') braceCount++;
+            else if (buffer[i] == '}') braceCount--;
+            
+            // Check for negative brace count (invalid JSON)
+            if (braceCount < 0) {
+                errorMsg = "Invalid format (more closing braces than opening)";
+                file.close();
+                return false;
+            }
+        }
+        
+        // Null-terminate the buffer for string operations
+        buffer[min(bytesRead, BUFFER_SIZE)] = '\0';
+        
+        // Check for required properties in this chunk
+        for (size_t i = 0; i < sizeof(requiredProps)/sizeof(requiredProps[0]); i++) {
+            if (!propertyFound[i] && strstr(buffer, requiredProps[i])) {
+                propertyFound[i] = true;
+            }
+        }
         
         totalRead += bytesRead;
+        
+        // Progress reporting for large files
         if (fileSize > 20000 && (totalRead % 20000) < BUFFER_SIZE) {
             Serial.printf("Validation progress: %u/%u bytes (%.1f%%)\n", 
                         totalRead, fileSize, (totalRead * 100.0) / fileSize);
         }
     }
+    
     file.close();
     
-    // Basic JSON structure validation
-    if (!jsonStr.startsWith("{")) {
-        errorMsg = "Invalid format (not a JSON file)";
-        return false;
-    }
-    
-    // Check for balanced braces
-    int braceCount = 0;
-    for (char c : jsonStr) {
-        if (c == '{') braceCount++;
-        else if (c == '}') braceCount--;
-        if (braceCount < 0) {
-            errorMsg = "Invalid format (more closing braces than opening)";
-            return false;
-        }
-    }
-    
+    // Check if the braces are balanced
     if (braceCount != 0) {
         errorMsg = "Invalid format (missing " + String(braceCount) + " closing braces)";
         return false;
     }
     
-    // Check required properties
+    // Check all required properties were found
     for (size_t i = 0; i < sizeof(requiredProps)/sizeof(requiredProps[0]); i++) {
-        if (jsonStr.indexOf("\"" + String(requiredProps[i]) + "\"") == -1) {
+        if (!propertyFound[i]) {
             errorMsg = "Missing " + String(propDescriptions[i]);
             return false;
         }
@@ -1920,7 +1878,7 @@ void handleFileUpload() {
       if (totalBytes % 10240 < upload.currentSize) {
         Serial.printf_P(PSTR("Upload progress: %u bytes written | Free heap: %u\n"), totalBytes, ESP.getFreeHeap());
       }
-      
+      //check if the bytes written are not equal to the upload current size
       if (bytesWritten != upload.currentSize) {
         Serial.printf_P(PSTR("Write error: only %u of %u bytes written\n"), bytesWritten, upload.currentSize);
         uploadError = "Write error: only " + String(bytesWritten) + " of " + 
@@ -2006,7 +1964,7 @@ void handleFileUpload() {
     }
     
     // Send success response if we reach here
-    server.send(200, "text/plain", "File uploaded successfully");
+    server.send(200, "application/json", "{\"success\": true}");
   }
 }
 
@@ -2026,80 +1984,46 @@ bool loadStationConfig() {
     return false;
   }
 
-  size_t fileSize = file.size();//get the file size
+  size_t fileSize = file.size();
   Serial.printf("Config file size: %u bytes\n", fileSize);
-
-  stationConfig.clear();
-
   Serial.printf("Free heap before reading: %u\n", ESP.getFreeHeap());
 
-  String jsonStr;
-  jsonStr.reserve(fileSize + 1); // Pre-allocate memory
+  // Clear any previous configuration
+  stationConfig.clear();
 
-  const size_t bufferSize = 1024;//set the buffer size
-  char buffer[bufferSize];//set the buffer
-  size_t totalBytesRead = 0;//set the total bytes read
-
-  //read the file
-  while (totalBytesRead < fileSize) {
-    size_t bytesToRead = min(bufferSize, fileSize - totalBytesRead);//get the bytes to read
-    size_t bytesRead = file.read((uint8_t*)buffer, bytesToRead);//read the file
-    if (bytesRead == 0) {
-      Serial.println("Unexpected end of file or read error");
-      break;
-    }
-    jsonStr += String(buffer).substring(0, bytesRead);//add the read data to the json string
-    totalBytesRead += bytesRead;//update the total bytes read
-
-    // Print progress every ~10KB
-    if (totalBytesRead % 10240 < bufferSize) { 
-      Serial.printf("Read progress: %u of %u bytes | Free heap: %u\n", 
-                    totalBytesRead, fileSize, ESP.getFreeHeap());
-    }
-  }
-
+  // Stream directly from file instead of loading into memory
+  DeserializationError error = deserializeJson(stationConfig, file);
   file.close();
 
-  if (totalBytesRead != fileSize) {
-    Serial.printf_P(PSTR("File read incomplete: expected %u bytes, got %u bytes\n"), fileSize, totalBytesRead);
-    Serial.println(F("Aborting JSON parsing due to incomplete file read"));
-    return false;
-  }
-
-  Serial.printf("Free heap before parsing: %u\n", ESP.getFreeHeap());
-
-  Serial.println("Parsing JSON string...");
-  DeserializationError error = deserializeJson(stationConfig, jsonStr);//deserialize the json string  
-  
   Serial.printf("Free heap after parsing: %u\n", ESP.getFreeHeap());
 
   if (error) {
     Serial.println("Failed to parse config file");
     Serial.printf("Parsing error: %s\n", error.c_str());
 
-    String failedFilename = currentConfigFilename;//get the current config filename
+    String failedFilename = currentConfigFilename;
     Serial.printf("Deleting corrupted config file: %s\n", failedFilename.c_str());
-    SPIFFS.remove("/station_config.json");//delete the corrupted config file
-    SPIFFS.remove("/config_filename.txt");//delete the config filename file
+    SPIFFS.remove("/station_config.json");
+    SPIFFS.remove("/config_filename.txt");
 
-    currentConfigFilename = "error_recovered.json";//set the current config filename to the error recovered file
-    saveConfigFilename(currentConfigFilename);//save the current config filename
+    currentConfigFilename = "error_recovered.json";
+    saveConfigFilename(currentConfigFilename);
 
     stationConfig.clear();
     configLoaded = false;
 
     createDefaultConfig();
 
-    file = SPIFFS.open("/station_config.json", "r");//open the default config file
+    file = SPIFFS.open("/station_config.json", "r");
     if (!file) {
       Serial.println("Failed to open default config");
-    return false;
-  }
+      return false;
+    }
 
-    String defaultJsonStr = file.readString();//read the default config file
+    // Stream directly from file again for the default config
+    DeserializationError defaultError = deserializeJson(stationConfig, file);
     file.close();
 
-    DeserializationError defaultError = deserializeJson(stationConfig, defaultJsonStr);//deserialize the default config file
     if (defaultError) {
       Serial.printf("Error parsing default config: %s\n", defaultError.c_str());
       return false;
@@ -2107,14 +2031,15 @@ bool loadStationConfig() {
 
     Serial.printf("Recovered from failed config file: %s\n", failedFilename.c_str());
     loadDeviceState();
-  configLoaded = true;
+    server.send(400, "application/json", String("{\"error\":\"") + error.c_str() + "! Recovered from corrupted config file..\"}");
+    configLoaded = true;
     return true;
   }
 
   configLoaded = true;
   Serial.println("Station Config Json Loaded");
   Serial.printf("Final heap after loading: %u\n", ESP.getFreeHeap());
-  for (int i = 0; i < 38; i++) Serial.print("=");Serial.println("\n");// print 38 equal signs
+  for (int i = 0; i < 38; i++) Serial.print("=");Serial.println("\n");
   return true;
 }
 
@@ -2128,7 +2053,7 @@ void selectFirstAvailableOptions() {
         firstLine = String(line.key().c_str());
         break;
     }
-    
+  
     String firstStation;
     JsonObject stations = lines[firstLine]["stations"];
     for (JsonPair station : stations) {
@@ -2139,7 +2064,7 @@ void selectFirstAvailableOptions() {
     String firstTrack;
     JsonArray tracks = stations[firstStation]["t"];
     if (tracks.size() > 0) {
-        firstTrack = tracks[0][0].as<String>();  // Keep as<String>() for array elements
+        firstTrack = tracks[0][0].as<String>();  
     } else {
         return;
     }
@@ -2372,32 +2297,31 @@ void checkWiFiConnection() {
 //===============================================================
 void updateCurrentStation(JsonObject stationData, JsonObject trackData, JsonObject style, 
                         const char* line, const char* station, const char* track) {
-    // Use the new compact format (i array instead of sInfo object)
+    // read the station info array (i array)
     JsonArray stationInfo = stationData["i"];
     
-    currentStation.lineCode = stationInfo[0].as<const char*>();              // sC -> i[0]
-    currentStation.stationCodeLine = trackData["Marker"]["lineCode"].as<const char*>();
-    currentStation.stationNumber = trackData["Marker"]["stationNumber"].as<const char*>();
+    currentStation.lineCode = stationInfo[0].as<const char*>();              // Line Code -> i[0]
+    currentStation.stationCodeLine = trackData["Marker"]["lineCode"].as<const char*>();//
+    currentStation.stationNumber = trackData["Marker"]["stationNumber"].as<const char*>();//
     currentStation.lineMarkerBgColor = style["lineMarkerBgColor"].as<const char*>();
     currentStation.lineNumberBgColor = style["lineNumberBgColor"].as<const char*>();
     currentStation.directionBarBgColor = style["directionBarBgColor"].as<const char*>();
-    currentStation.stationNameJa = stationInfo[1].as<const char*>();         // Ja -> i[1]
-    currentStation.stationNameHiragana = stationInfo[2].as<const char*>();   // Hi -> i[2]
-    currentStation.stationNameKo = stationInfo[3].as<const char*>();         // Ko -> i[3]
+    currentStation.stationNameJa = stationInfo[1].as<const char*>();         // Station Name Ja -> i[1]
+    currentStation.stationNameHiragana = stationInfo[2].as<const char*>();   // Station Name Hiragana  -> i[2]
+    currentStation.stationNameKo = stationInfo[3].as<const char*>();         // Station Name Korean -> i[3]
     currentStation.stationNameEn = station;
     currentStation.prevStation = trackData["Direction"]["PreviousStation"]["Ja"].as<const char*>();
     currentStation.prevStationEn = trackData["Direction"]["PreviousStation"]["En"].as<const char*>();
     currentStation.nextStation = trackData["Direction"]["NextStation"]["Ja"].as<const char*>();
     currentStation.nextStationEn = trackData["Direction"]["NextStation"]["En"].as<const char*>();
-    currentStation.wardBox = stationInfo[4].as<const char*>();               // wB -> i[4]
+    currentStation.wardBox = stationInfo[4].as<const char*>();               // Ward Box -> i[4]
     currentStation.trackKey = track;
-    
     // Update the sequenceLine variable for sequence mode
     sequenceLine = line;
 }
 
 //===============================================================
-// Check System Health
+//  System Health function
 //===============================================================
 void checkSysHealth() {
     SystemHealth health;
@@ -2538,6 +2462,44 @@ bool getStationData(const String& line, const String& station, JsonObject& stati
 //===============================================================
 // JR-Beru Shell Command handler
 //===============================================================
+
+// Command handler function typedefs and command registry
+typedef void (*CommandHandlerFunction)(const String&);
+
+struct CommandEntry {
+    const char* command;
+    CommandHandlerFunction handler;
+    const char* description;
+};
+
+// Forward declarations for command handlers
+void handleHelp(const String& param);
+void handleHealth(const String& param);
+void handleStatus(const String& param);
+void handleVolume(const String& param);
+void handlePlay(const String& param);
+void handleIndex(const String& param);
+void handleList(const String& param);
+void handleStation(const String& param);
+void handleReset(const String& param);
+void handleReboot(const String& param);
+
+// Registry of all available commands
+const CommandEntry COMMAND_REGISTRY[] = {
+    {"help",    handleHelp,    "Display help"},
+    {"health",  handleHealth,  "Display system health information"},
+    {"status",  handleStatus,  "Display current station and playback status"},
+    {"volume",  handleVolume,  "Get or set volume level [0-30]"},
+    {"play",    handlePlay,    "Play current melody/atos/chime/va"},
+    {"index",   handleIndex,   "Reindex the file Count of the DFPlayer"},
+    {"ls",      handleList,    "List files on SPIFFS or available stations"},
+    {"station", handleStation, "Set current station [line] [station] [track]"},
+    {"reset",   handleReset,   "Reset the WiFi or DFPlayer"},
+    {"reboot",  handleReboot,  "Restart ESP32"},
+};
+
+const int COMMAND_COUNT = sizeof(COMMAND_REGISTRY) / sizeof(CommandEntry);
+
 void processCommand() {
     serialCommand.trim();  // Remove leading/trailing whitespace
     
@@ -2547,229 +2509,25 @@ void processCommand() {
         return;
     }
     
-    // Convert command to lowercase for case-insensitive comparison
-    String cmd = serialCommand;
-    cmd.toLowerCase();
+    // Split into command and parameters
+    int spaceIndex = serialCommand.indexOf(' ');
+    String command = (spaceIndex == -1) ? serialCommand : serialCommand.substring(0, spaceIndex);
+    String param = (spaceIndex == -1) ? "" : serialCommand.substring(spaceIndex + 1);
     
-    // Split command into parts (for commands with parameters)
-    int spaceIndex = cmd.indexOf(' ');
-    String command = (spaceIndex == -1) ? cmd : cmd.substring(0, spaceIndex);
-    String param = (spaceIndex == -1) ? "" : cmd.substring(spaceIndex + 1);
+    // Convert only the command to lowercase for case-insensitive comparison
+    command.toLowerCase();
     
-    if (command == "health") {
-        checkSysHealth();
-    } 
-    else if (command == "help") {
-        Serial.println(F("\n============= JR-Beru Shell Commands ============="));
-        Serial.println(F("health             - Display system health information"));
-        Serial.println(F("status             - Display current station and playback status"));
-        Serial.println(F("volume [0-30]      - Get or set volume level"));
-        Serial.println(F("play melody/atos/chime/va - Play current melody/atos/chime/va"));
-        Serial.println(F("index              - Reindex the file Count of the DFPlayer"));
-        Serial.println(F("ls / or stations   - List files on SPIFFS or available stations"));
-        Serial.println(F("station [line] [station] [track] - Set current station"));
-        Serial.println(F("reset wifi/player  - Reset the WiFi or DFPlayer"));
-        Serial.println(F("reboot             - Restart ESP32"));
-        Serial.println(F("help               - Display help"));
-        for (int i = 0; i < 51; i++) Serial.print("=");Serial.println("\n");// print 51 equal signs
-    }
-    else if (command == "status") {
-        Serial.println(F("\n======== Current Status ========"));
-        Serial.printf_P(PSTR("Current Line: %s\n"), currentStation.stationCodeLine);
-        Serial.printf_P(PSTR("Current Station: %s (%s)\n"), currentStation.stationNameJa, currentStation.stationNameEn);
-        Serial.printf_P(PSTR("Current Track: %s\n"), currentStation.trackKey);
-        Serial.printf_P(PSTR("Current Melody: %d, Current Atos: %d, Current DoorChime: %d, Current VA: %d\n"), 
-                currentMelody, currentAtos, currentDoorChime, currentVA);
-        Serial.printf_P(PSTR("Volume: %d/30\n"), globalVolume);
-        Serial.printf_P(PSTR("WiFi Status: %s\n"), WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected");
-        if (WiFi.status() == WL_CONNECTED) {
-            Serial.printf_P(PSTR("IP Address: %s\n"), WiFi.localIP().toString().c_str());
-        }
-        for (int i = 0; i < 32; i++) Serial.print("=");Serial.println("\n");// print 32 equal signs
-    }
-    else if (command == "volume") {
-        if (param.length() > 0) {
-            // Set volume
-            int newVolume = param.toInt();
-            if (newVolume >= 0 && newVolume <= 30) {
-                globalVolume = newVolume;
-                myDFPlayer.volume(globalVolume);
-                Serial.printf("Volume set to %d\n", globalVolume);
-                saveDeviceState(); // Save the new volume setting
-            } else {
-                Serial.println(F("Invalid volume level. Use a value between 0-30."));
-            }
-        } else {
-            // Get current volume
-            Serial.printf("Current volume: %d/30\n", globalVolume);
+    // Find and execute the command
+    bool commandFound = false;
+    for (int i = 0; i < COMMAND_COUNT; i++) {
+        if (command == COMMAND_REGISTRY[i].command) {
+            COMMAND_REGISTRY[i].handler(param);
+            commandFound = true;
+            break;
         }
     }
-    else if (command == "play") {
-        if (param == "melody") {
-            Serial.printf_P(PSTR("Playing melody %d\n"), currentMelody);
-            myDFPlayer.playFolder(MelodyFolder, currentMelody);
-        } 
-        else if (param == "atos") {
-            Serial.printf_P(PSTR("Playing ATOS announcement %d\n"), currentAtos);
-            myDFPlayer.playFolder(AtosFolder, currentAtos);
-        }
-        else if (param == "chime") {
-            Serial.printf_P(PSTR("Playing door chime %d\n"), currentDoorChime);
-            myDFPlayer.playFolder(DoorChimeFolder, currentDoorChime);
-        }
-        else if (param == "va") {
-            Serial.printf_P(PSTR("Playing platform announcement %d\n"), currentVA);
-            myDFPlayer.playFolder(VAFolder, currentVA);
-        }
-        else {
-            Serial.println(F("Invalid play parameter. Use: melody, atos, chime, or va"));
-        }
-    }
-    else if (command == "ls") {
-        if (param == "/" || param == "") {
-            Serial.println(F("\n======== SPIFFS Files System ========\n"));
-            File root = SPIFFS.open("/");
-            File file = root.openNextFile();
-            int fileCount = 0;
-            
-            while (file) {
-                String fileName = file.name();
-                size_t fileSize = file.size();
-                Serial.printf_P(PSTR("%s (%d bytes)\n"), fileName.c_str(), fileSize);
-                file = root.openNextFile();
-                fileCount++;
-            }
-            
-            if (fileCount == 0) {
-                Serial.println(F("No files found"));
-            }
-            Serial.println("");
-            for (int i = 0; i < 37; i++) Serial.print("=");Serial.println("\n");// print 37 equal signs
-            //=======================================================================================
-        }
-        else if (param == "stations") {
-            Serial.println(F("\n=================== Available Stations ==================="));
-            
-            for (JsonPair linePair : stationConfig["lines"].as<JsonObject>()) {
-                String lineCode = linePair.key().c_str();
-                Serial.printf_P(PSTR("Line: %s\n"), lineCode.c_str());
-                
-                // Iterate through stations in this line
-                JsonObject stations = linePair.value()["stations"];
-                for (JsonPair stationPair : stations) {
-                    String stationName = stationPair.key().c_str();
-                    JsonObject stationData = stationPair.value();
-                    
-                    // Get station info from i array
-                    JsonArray stationInfo = stationData["i"];
-                    String stationJa = stationInfo[1].as<String>();  // Ja is at index 1
-                    String stationCode = stationInfo[0].as<String>(); // sC is at index 0
-                    
-                    // List tracks for this station from t array
-                    JsonArray tracks = stationData["t"];
-                    int trackCount = tracks.size();
-                    String trackList = "";
-                    
-                    for (JsonArray trackArray : tracks) {
-                        String trackNum = trackArray[0].as<String>();
-                        if (trackList.length() > 0) trackList += ", ";
-                        trackList += trackNum;
-                    }
-                    
-                    Serial.printf_P(PSTR("  - %s (%s, %s) - Tracks: %s\n"), 
-                        stationName.c_str(), 
-                        stationJa.c_str(),
-                        stationCode.c_str(),
-                        trackList.c_str());
-                }
-                Serial.println();
-            }
-            
-            for (int i = 0; i < 58; i++) Serial.print("=");Serial.println("\n");// print 58 equal signs
-           //=======================================================================================
-        }
-        else {
-            Serial.println(F("Invalid ls parameter. Use: / or stations"));
-        }
-    }
-    else if (command == "station") {
-        // Parse parameters: line station track
-        int firstSpace = param.indexOf(' ');
-        if (firstSpace == -1) {
-            Serial.println(F("Invalid format. Use: station [line] [station] [track]"));
-            Serial.print(PROMPT);
-            return;
-        }
-        
-        String line = param.substring(0, firstSpace);
-        param = param.substring(firstSpace + 1);
-        
-        int secondSpace = param.indexOf(' ');
-        if (secondSpace == -1) {
-            Serial.println(F("Invalid format. Use: station [line] [station] [track]"));
-            Serial.print(PROMPT);
-            return;
-        }
-        
-        String station = param.substring(0, secondSpace);
-        String track = param.substring(secondSpace + 1);
-        
-        // Get station data and validate
-        JsonObject stationData;
-        JsonObject style;
-        if (!getStationData(line, station, stationData, style)) {
-            Serial.printf_P(PSTR("Invalid station data for line '%s', station '%s'\n"), line.c_str(), station.c_str());
-            Serial.print(PROMPT);
-            return;
-        }
-        
-        // Create a temporary track object
-        StaticJsonDocument<512> trackDoc;
-        JsonObject trackData = trackDoc.to<JsonObject>();
-        
-        if (!findTrackData(stationData, track, trackData)) {
-            Serial.printf_P(PSTR("Track '%s' not found in station '%s'\n"), track.c_str(), station.c_str());
-            Serial.print(PROMPT);
-            return;
-        }
-        
-        updateCurrentStation(stationData, trackData, style, line.c_str(), station.c_str(), track.c_str());
-        saveDeviceState();
-        
-        Serial.printf_P(PSTR("Station set to: %s, %s, %s\n"), line.c_str(), station.c_str(), track.c_str());
-    }
-    else if (command == "reset") {
-        if (param == "player") {
-            Serial.println(F("Resetting DFPlayer Mini..."));
-            myDFPlayer.reset();
-            delay(1000);
-            myDFPlayer.volume(globalVolume);
-            Serial.println(F("DFPlayer reset complete."));
-        }
-        else if (param == "wifi") {
-            Serial.println(F("Resetting WiFi settings..."));
-            WiFiManager wm;
-            wm.resetSettings();
-            Serial.println(F("WiFi settings reset. Device will restart..."));
-            delay(1000);
-            ESP.restart();
-        }
-        else {
-            Serial.println(F("Invalid reset parameter. Use: player or wifi"));
-        }
-    }
-    else if (command == "reboot") {
-        Serial.println(F("Rebooting ESP32..."));
-        delay(1000);
-        ESP.restart();
-    }
-    else if (command == "index") {
-        Serial.println(F("Indexing DFPlayer files..."));
-            myDFPlayer.reset();delay(2000);myDFPlayer.volume(globalVolume);delay(2000);
-            UpdateFileCount();
-        Serial.println(F("Indexing complete."));
-    }
-    else {
+    
+    if (!commandFound) {
         Serial.print(F("Unknown command: "));
         Serial.println(serialCommand);
         Serial.println(F("Type 'help' for available commands"));
@@ -2781,6 +2539,227 @@ void processCommand() {
     
     // Show prompt
     Serial.print(PROMPT);
+}
+
+// Command handler implementations
+void handleHelp(const String& param) {
+    Serial.println(F("\n============= JR-Beru Shell Commands ============="));
+    for (int i = 0; i < COMMAND_COUNT; i++) {
+        char buffer[80];
+        snprintf(buffer, sizeof(buffer), "%-18s - %s", 
+                 COMMAND_REGISTRY[i].command, 
+                 COMMAND_REGISTRY[i].description);
+        Serial.println(buffer);
+        
+        // Skip duplicate entries (like 'ls' and 'stations')
+        if (i < COMMAND_COUNT - 1 && 
+            strcmp(COMMAND_REGISTRY[i].description, COMMAND_REGISTRY[i+1].description) == 0) {
+            i++;
+        }
+    }
+    for (int i = 0; i < 51; i++) Serial.print("=");Serial.println("\n");
+}
+
+void handleHealth(const String& param) {
+    checkSysHealth();
+}
+
+void handleStatus(const String& param) {
+    Serial.println(F("\n======== Current Status ========"));
+    Serial.printf_P(PSTR("Current Line: %s\n"), currentStation.stationCodeLine);
+    Serial.printf_P(PSTR("Current Station: %s (%s)\n"), currentStation.stationNameJa, currentStation.stationNameEn);
+    Serial.printf_P(PSTR("Current Track: %s\n"), currentStation.trackKey);
+    Serial.printf_P(PSTR("Current Melody: %d, Current Atos: %d, Current DoorChime: %d, Current VA: %d\n"), 
+            currentMelody, currentAtos, currentDoorChime, currentVA);
+    Serial.printf_P(PSTR("Volume: %d/30\n"), globalVolume);
+    Serial.printf_P(PSTR("WiFi Status: %s\n"), WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected");
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf_P(PSTR("IP Address: %s\n"), WiFi.localIP().toString().c_str());
+    }
+    for (int i = 0; i < 32; i++) Serial.print("=");Serial.println("\n");
+}
+
+void handleVolume(const String& param) {
+    if (param.length() > 0) {
+        // Set volume
+        int newVolume = param.toInt();
+        if (newVolume >= 0 && newVolume <= 30) {
+            globalVolume = newVolume;
+            myDFPlayer.volume(globalVolume);
+            Serial.printf("Volume set to %d\n", globalVolume);
+            saveDeviceState(); // Save the new volume setting
+        } else {
+            Serial.println(F("Invalid volume level. Use a value between 0-30."));
+        }
+    } else {
+        // Get current volume
+        Serial.printf("Current volume: %d/30\n", globalVolume);
+    }
+}
+
+void handlePlay(const String& param) {
+    if (param == "melody") {
+        Serial.printf_P(PSTR("Playing melody %d\n"), currentMelody);
+        myDFPlayer.playFolder(MelodyFolder, currentMelody);
+    } 
+    else if (param == "atos") {
+        Serial.printf_P(PSTR("Playing ATOS announcement %d\n"), currentAtos);
+        myDFPlayer.playFolder(AtosFolder, currentAtos);
+    }
+    else if (param == "chime") {
+        Serial.printf_P(PSTR("Playing door chime %d\n"), currentDoorChime);
+        myDFPlayer.playFolder(DoorChimeFolder, currentDoorChime);
+    }
+    else if (param == "va") {
+        Serial.printf_P(PSTR("Playing platform announcement %d\n"), currentVA);
+        myDFPlayer.playFolder(VAFolder, currentVA);
+    }
+    else {
+        Serial.println(F("Invalid play parameter. Use: melody, atos, chime, or va"));
+    }
+}
+
+void handleIndex(const String& param) {
+    Serial.println(F("Indexing DFPlayer files..."));
+    UpdateFileCount();
+    Serial.println(F("Indexing complete."));
+}
+
+void handleList(const String& param) {
+    if (param == "/" || param.length() == 0) {
+        Serial.println(F("\n======== SPIFFS Files System ========\n"));
+        File root = SPIFFS.open("/");
+        File file = root.openNextFile();
+        int fileCount = 0;
+        
+        while (file) {
+            String fileName = file.name();
+            size_t fileSize = file.size();
+            Serial.printf_P(PSTR("%s (%d bytes)\n"), fileName.c_str(), fileSize);
+            file = root.openNextFile();
+            fileCount++;
+        }
+        
+        if (fileCount == 0) {
+            Serial.println(F("No files found"));
+        }
+        Serial.println("");
+        for (int i = 0; i < 37; i++) Serial.print("=");Serial.println("\n");
+    }
+    else if (param == "stations") {
+        Serial.println(F("\n=================== Available Stations ==================="));
+        
+        for (JsonPair linePair : stationConfig["lines"].as<JsonObject>()) {
+            String lineCode = linePair.key().c_str();
+            Serial.printf_P(PSTR("Line: %s\n"), lineCode.c_str());
+            
+            // Iterate through stations in this line
+            JsonObject stations = linePair.value()["stations"];
+            for (JsonPair stationPair : stations) {
+                String stationName = stationPair.key().c_str();
+                JsonObject stationData = stationPair.value();
+                
+                // Get station info from i array
+                JsonArray stationInfo = stationData["i"];
+                String stationJa = stationInfo[1].as<String>();  // Ja is at index 1
+                String stationCode = stationInfo[0].as<String>(); // sC is at index 0
+                
+                // List tracks for this station from t array
+                JsonArray tracks = stationData["t"];
+                int trackCount = tracks.size();
+                String trackList = "";
+                
+                for (JsonArray trackArray : tracks) {
+                    String trackNum = trackArray[0].as<String>();
+                    if (trackList.length() > 0) trackList += ", ";
+                    trackList += trackNum;
+                }
+                
+                Serial.printf_P(PSTR("  - %s (%s, %s) - Tracks: %s\n"), 
+                    stationName.c_str(), 
+                    stationJa.c_str(),
+                    stationCode.c_str(),
+                    trackList.c_str());
+            }
+            Serial.println();
+        }
+        
+        for (int i = 0; i < 58; i++) Serial.print("=");Serial.println("\n");
+    }
+    else {
+        Serial.println(F("Invalid ls parameter. Use: / or stations"));
+    }
+}
+
+void handleStation(const String& param) {
+    // Split parameters into array: [line, station, track]
+    String params[3];
+    int paramCount = 0;
+    int startPos = 0;
+    int spacePos;
+    
+    while ((spacePos = param.indexOf(' ', startPos)) != -1 && paramCount < 2) {
+        params[paramCount++] = param.substring(startPos, spacePos);
+        startPos = spacePos + 1;
+    }
+    if (startPos < param.length()) {
+        params[paramCount++] = param.substring(startPos);
+    }
+    
+    if (paramCount != 3) {
+        Serial.println(F("Invalid format. Use: station [line] [station] [track]"));
+        return;
+    }
+    
+    // Get station data and validate
+    JsonObject stationData;
+    JsonObject style;
+   
+    if (!getStationData(params[0], params[1], stationData, style)) {
+        Serial.printf_P(PSTR("Invalid station data for line '%s', station '%s'\n"), params[0].c_str(), params[1].c_str());
+        return;
+    }
+    
+    // Validate track data
+    StaticJsonDocument<512> trackDoc;
+    JsonObject trackData = trackDoc.to<JsonObject>();
+    if (!findTrackData(stationData, params[2], trackData)) {
+        Serial.printf_P(PSTR("Track '%s' not found in station '%s'\n"), params[2].c_str(), params[1].c_str());
+        return;
+    }
+    
+    updateCurrentStation(stationData, trackData, style, params[0].c_str(), params[1].c_str(), params[2].c_str());
+    notifyUIofStationChange();
+    saveDeviceState();
+    
+    Serial.printf_P(PSTR("Station set to: %s, %s, %s\n"), params[0].c_str(), params[1].c_str(), params[2].c_str());
+}
+
+void handleReset(const String& param) {
+    if (param == "player") {
+        Serial.println(F("Resetting DFPlayer Mini..."));
+        myDFPlayer.reset();
+        delay(1000);
+        myDFPlayer.volume(globalVolume);
+        Serial.println(F("DFPlayer reset complete."));
+    }
+    else if (param == "wifi") {
+        Serial.println(F("Resetting WiFi settings..."));
+        WiFiManager wm;
+        wm.resetSettings();
+        Serial.println(F("WiFi settings reset. Device will restart..."));
+        delay(500);
+        ESP.restart();
+    }
+    else {
+        Serial.println(F("Invalid reset parameter. Use: player or wifi"));
+    }
+}
+
+void handleReboot(const String& param) {
+    Serial.println(F("Rebooting ESP32..."));
+    delay(500);
+    ESP.restart();
 }
 
 

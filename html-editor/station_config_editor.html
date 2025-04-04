@@ -15,7 +15,7 @@
             padding: 20px; 
         }
 
-        /* Layout */
+        /* Layout and containers */
         .container {
             display: flex;
             flex-direction: column;
@@ -24,114 +24,47 @@
             margin: 0 auto;
         }
 
-        /* Add new layout styles */
-        .top-panel {
+        .top-panel, .editor-panel, .preview-panel {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .preview-panel {
+            padding: 15px;
+        }
+
+        .editor-panel {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bottom-panels {
+            display: flex;
+            gap: 12px;
             width: 100%;
         }
 
-        /* Make select inputs more responsive */
-        .line-config select {
-            min-width: 100px;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 1200px) {
-            .line-config .color-input {
-                min-width: 90px;
-            }
-            
-            .line-config input[type="text"] {
-                width: 55px;
-            }
-        }
-
-        @media (max-width: 992px) {
-            .bottom-panels {
-                flex-direction: column;
-            }
-            
-            .bottom-panels > div {
-                width: 100%;
-            }
-        }
-
-        /* Adjust panel widths */
         .bottom-panels > div:first-child {
-            flex: 0 0 auto;  /* Don't grow, don't shrink, auto width */
-            width: 300px;    /* Fixed width for Configuration File panel */
+            flex: 0 0 auto;
+            max-width: 335px;
         }
 
         .bottom-panels > div:last-child {
-            flex: 1;         /* Allow Line Configuration panel to grow */
-            min-width: 0;    /* Allow panel to shrink if needed */
+            flex: 1;
+            min-width: 0;
         }
 
-        /* Make the panels more compact */
         .bottom-panels .editor-panel {
-            padding: 12px 12px;
+            padding: 12px;
             height: auto;
             display: flex;
             align-items: center;
         }
 
-        /* Adjust headings in bottom panels */
-        .bottom-panels h3 {
-            margin: 0;
-            font-size: 0.85rem;
-            white-space: nowrap;
-        }
-
-        /* Make buttons more compact and in single line */
-        .bottom-panels .btn-group {
-            display: flex;
-            gap: 8px;
-            margin: 0;
-            flex-wrap: nowrap;
-        }
-
-        .bottom-panels .btn {
-            flex: 1;
-            min-width: 70px;
-            padding: 4px 10px;
-            white-space: nowrap;
-        }
-
-        /* Adjust select and button container */
-        .bottom-panels .config-grid {
-            display: flex;
-            gap: 8px;
-            margin: 0;
-            flex: 1;
-        }
-
-        .bottom-panels .form-group.config-full {
-            flex: 1;
-            margin: 0;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .bottom-panels {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .bottom-panels .editor-panel {
-                flex-wrap: wrap;
-            }
-        }
-
-        /* Editor Panel */
-        .editor-panel {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
+        /* Section styles */
         .editor-section {
             margin-bottom: 8px;
             padding: 8px;
@@ -139,9 +72,18 @@
             border-radius: 6px;
         }
 
-        .editor-section h3 {
+        .editor-section + .editor-section {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+
+        /* Typography */
+        h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
             font-size: 0.9rem;
-            margin-bottom: 8px;
+            margin: 0 0 8px;
             color: #666;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -149,19 +91,28 @@
             width: 100%;
         }
 
-        /* Preview Panel */
-        .preview-panel {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            width: 100%;
+        .preview-panel h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
         }
 
+        .bottom-panels h3 {
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .line-config h3 {
+            font-size: 0.85rem;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        /* Form elements */
         label {
             font-size: 0.8rem;
             margin-bottom: 2px;
             color: #666;
+            display: block;
         }
 
         input, select {
@@ -173,383 +124,40 @@
             border-radius: 4px;
         }
 
-        /* Color input groups */
-        .color-input {
-            display: flex;
-            flex-direction: column;
+        .bottom-panels select {
+            height: 24px;
+            padding: 2px 6px;
         }
 
-        .color-input .input-group {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-            flex-wrap: nowrap;
-        }
-
-        .color-input input[type="color"] {
-            width: 40px;
-            height: 28px;
-            padding: 0;
-        }
-
-        .color-input input[type="text"] {
-            flex: 1;
-        }
-
-        /* Buttons */
-        .btn {
-            background: #2196F3;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            flex: 0 1 auto;  /* Allow buttons to shrink but not grow */
-            white-space: nowrap;
-        }
-
-        .btn:hover {
-            background: #1976D2;
-        }
-
-        .btn-group {
-            margin-top: 8px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            justify-content: flex-start;
-        }
-
-        /* Stack filename input and buttons in a vertical layout */
-        .config-file-section {
-            display: flex;
-            flex-direction: column;
-            gap: 12px; /* Adjust spacing between input and buttons */
-            width: 100%;
-        }
-
-        /* Config filename input */
-        .config-file-input {
-            display: block;
-        }
-        
-        #configFilename {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-
-        /* Station Sign Preview Styles */
-        .station-sign {
-            background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%);
-            padding: 15px 15px 0; 
-            position: relative; 
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-            overflow: hidden;
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .station-content { 
-            position: relative; 
-            width: 100%; 
-            display: flex; 
-            justify-content: center;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 60px; /* Add padding to prevent text from touching edges */
-        }
-
-        .line-marker {
-            position: absolute;
-            top: 0;
-            left: 0;
-            transform: translateX(calc(-100% - 10px)); /* Position 10px to the left of the container */
-            width: 48px; 
-            height: 67px; 
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .station-number-container { 
-            position: absolute; 
-            top: 23px; 
-            left: 3px; 
-            right: 3px; 
-            bottom: 3px;
-            border-radius: 5px; 
-            padding: 3.7px; 
-        }
-
-        .station-number-inner { 
-            background: white; 
-            border-radius: 2px; 
-            height: 100%; 
-            width: 100%;
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-        }
-
-        .line-code-jy { 
-            color: #000; 
-            font-weight: bold; 
-            font-size: 13px; 
-            line-height: 1; 
-            margin-bottom: 2px; 
-        }
-
-        .line-code-akb { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            right: 0; 
-            color: white;
-            font-weight: bold; 
-            font-size: 16px; 
-            text-align: center; 
-        }
-
-        .line-number { 
-            color: #000; 
-            font-weight: bold; 
-            font-size: 18px; 
-            line-height: 0.8; 
-        }
-
-        .station-info { 
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-            width: auto; /* Allow width to be dynamic */
-            min-width: 200px; /* Minimum width for very short names */
-            margin: 0 auto;
-        }
-
-        .station-name-ja {
-            position: relative; 
-            display: inline-block; 
-            font-size: 45px; 
-            font-weight: bold;
-            line-height: 1.2; 
-            font-family: 'MS Gothic', 'Yu Gothic', sans-serif; 
-            text-align: center;
-            white-space: nowrap; /* Prevent name from wrapping */
-        }
-
-        .station-name-hiragana { 
-            font-size: 16px; 
-            font-weight: bold;
-            color: #333; 
-            text-align: center;
-            width: 100%;
-        }
-
-        .station-name-ko { 
-            font-size: 14px; 
-            color: #666; 
-            margin-bottom: 6px; 
-            text-align: center;
-            width: 100%;
-        }
-
-        .ward-label { 
-            position: absolute; 
-            top: 15px; 
-            right: 50px; 
-            display: flex; 
-            gap: 1px; 
-        }
-
-        .ward-box { 
-            background: white; 
-            color: black; 
-            width: 16px; 
-            height: 16px;
-            border: 1px solid black; 
-            border-radius: 2px; 
-            display: flex; 
-            align-items: center;
-            justify-content: center; 
-            font-size: 12px; 
-        }
-
-        .ward-text { 
-            background: black; 
-            color: white; 
-            width: 16px; 
-            height: 16px;
-            border-radius: 2px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            font-size: 12px; 
-        }
-
-        .direction-bar {
-            margin: 0 -15px; 
-            height: 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center; 
-            color: white;
-            position: relative;
-            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%);
-            overflow: visible; 
-        }
-
-        .station-indicator { 
-            position: absolute; 
-            top: 0; 
-            left: 50%; 
-            transform: translateX(-50%);
-            width: 32px; 
-            height: 32px; 
-        }
-
-        .direction-left { 
-            padding-left: 15px; 
-            width: 33%; 
-            text-align: left; 
-        }
-
-        .direction-right { 
-            padding-right: 20px; 
-            width: 33%; 
-            text-align: right;
-        }
-
-        .direction-station { 
-            font-size: 16px; 
-            font-weight: bold; 
-        }
-
-        .station-names-container { 
-            display: flex; 
-            justify-content: space-between; 
-            width: 100%; 
-            max-width: 700px; 
-            margin: 0 auto; 
-        }
-
-        .station-name-en { 
-            font-size: 16px; 
-            color: #333; 
-        }
-
-        .station-name-en.current { 
-            font-weight: bold; 
-        }
-
-        .station-name-en-left { 
-            width: 33%; 
-            text-align: left; 
-        }
-
-        .station-name-en-center { 
-            width: 33%; 
-            text-align: center; 
-        }
-
-        .station-name-en-right { 
-            width: 33%; 
-            text-align: right;
-        }
-
-        /* Add these styles */
-        .editor-section + .editor-section {
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-            margin-top: 20px;
-        }
-
-        h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-
-        /* Line config grid */
-        .line-config-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-
-        .line-config-grid .form-group {
-            margin-bottom: 0;
-        }
-
-        .line-config-full {
-            grid-column: 1 / -1;
-        }
-
-        /* Make labels and inputs more compact */
-        .line-config-grid label {
-            font-size: 0.9rem;
-            margin-bottom: 3px;
-        }
-
-        .line-config-grid input, 
-        .line-config-grid select {
-            padding: 6px;
-        }
-
-        /* Station Configuration Grid */
+        /* Grids and layouts */
+        .config-grid, 
+        .line-config-grid, 
         .station-config-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-
-        .station-config-grid .form-group {
-            margin-bottom: 0;
-        }
-
-        .station-config-full {
-            grid-column: 1 / -1;
-        }
-
-        .preview-panel h3 {
-            font-size: 1rem;
-            margin-bottom: 12px;
-        }
-
-        /* Make configurations more compact with 3 columns */
-        .config-grid {
-            display: grid;
-            /* Use auto-fit to dynamically adjust columns based on screen width */
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 8px;
             align-items: start;
         }
 
-        /* Adjust minimum width for mobile */
-        @media (max-width: 768px) {
-            .config-grid {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            }
+        .config-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         }
 
-        /* Adjust for very small screens */
-        @media (max-width: 480px) {
-            .config-grid {
-                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            }
+        .line-config-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
         }
 
-        /* Keep full-width items spanning all columns */
-        .config-grid .form-group.config-full {
+        .station-config-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .config-full, 
+        .line-config-full, 
+        .station-config-full {
             grid-column: 1 / -1;
         }
 
-        /* Make inputs and labels more compact */
+        /* Compact grid elements */
         .config-grid label {
             font-size: 0.75rem;
             margin-bottom: 1px;
@@ -563,107 +171,37 @@
             padding: 4px;
             height: 26px;
             font-size: 0.85rem;
-            width: 100%;
-            min-width: 0; /* Allow inputs to shrink */
+            min-width: 0;
         }
 
-        .config-grid .color-input {
+        /* Color input groups */
+        .color-input {
+            display: flex;
+            flex-direction: column;
             gap: 4px;
         }
 
-        .config-grid .color-input input[type="color"] {
-            width: 30px;
-            height: 26px;
-        }
-
-        /* Add to existing styles */
-        .btn-danger {
-            background: #dc3545;
-        }
-
-        .btn-danger:hover {
-            background: #c82333;
-        }
-
-        /* Adjust select height */
-        .bottom-panels select {
-            height: 24px;
-            padding: 2px 6px;
-        }
-
-        /* Line config specific styles */
-        .line-config h3 {
-            font-size: 0.85rem;
-            margin: 0;
-            white-space: nowrap;
-        }
-
-        .line-config label {
-            font-size: 0.75rem;
-            white-space: nowrap;
-            margin: 0;
-        }
-
-        .line-config input[type="color"] {
-            width: 24px;
-            height: 24px;
-            padding: 0;
-            flex-shrink: 0;  /* Prevent color picker from shrinking */
-        }
-
-        .line-config input[type="text"] {
-            width: 85px;  /* Final width for hex input */
-            height: 24px;
-            padding: 2px 4px;
-            font-size: 0.8rem;
-            flex-shrink: 0;  /* Prevent hex input from shrinking */
-        }
-
-        /* Update bottom panels layout */
-        .bottom-panels {
+        .color-input .input-group {
             display: flex;
-            gap: 12px;
-            width: 100%;
-        }
-
-        .config-file-buttons {
-            display: flex;
-            gap: 8px;
+            gap: 5px;
             align-items: center;
             flex-wrap: nowrap;
-            margin-left: auto;
-            flex: 1;  /* Take remaining space */
         }
 
-        .config-file-buttons .btn {
-            flex: 1;  /* Make buttons equal width */
-            min-width: 60px;  /* Slightly wider minimum */
-            padding: 4px 8px;
-            text-align: center;
-            font-size: 0.8rem;
+        .color-input input[type="color"] {
+            width: 40px;
+            height: 28px;
+            padding: 0;
+            flex-shrink: 0;
         }
 
-        /* Responsive adjustments for Config File panel */
-        @media (max-width: 992px) {
-            .config-file-buttons {
-                gap: 6px;
-            }
-            
-            .config-file-buttons .btn {
-                min-width: 70px;  /* Even wider on smaller screens */
-            }
-
-            .line-config .color-input {
-                flex-grow: 1;
-                max-width: none; /* Remove max-width restriction for better flexibility */
-                min-width: 10px;
-            }
+        .color-input input[type="text"] {
+            flex: 1;
         }
 
-        @media (max-width: 480px) {
-            .config-file-buttons {
-                width: 100%;  /* Full width on very small screens */
-            }
+        .config-grid .color-input input[type="color"] {
+            width: 24px;
+            height: 25px;
         }
 
         .line-config .color-input {
@@ -676,42 +214,157 @@
         }
 
         .line-config .color-input label {
-            width: 70px;  /* Fixed width for labels */
+            width: 70px;
             white-space: nowrap;
         }
 
-        /* Line Config panel adjustments */
-        .line-config .form-group {
-            flex: 0 1 auto;  /* Don't grow, allow shrink */
-            width: 100px;    /* Reduce fixed width for line selector */
-            min-width: 100px; /* Reduce minimum width */
+        .line-config input[type="color"] {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            flex-shrink: 0;
         }
 
-        /* Button group adjustments */
-        .line-config .btn-group {
-            display: flex;
-            flex: 0 0 auto;  /* Don't grow or shrink */
+        .line-config input[type="text"] {
+            width: 85px;
+            height: 24px;
+            padding: 2px 4px;
+            font-size: 0.8rem;
+            flex-shrink: 0;
         }
 
-        /* Ensure container doesn't overflow */
+        /* Configuration sections */
         .line-config .config-grid {
             display: flex;
             align-items: center;
             gap: 8px;
             flex: 1;
             flex-wrap: nowrap;
-            min-width: 0;    /* Allow container to shrink */
-            overflow: hidden; /* Prevent overflow */
+            min-width: 0;
+            overflow: hidden;
         }
 
-        /* Color group adjustments */
+        .line-config .form-group {
+            flex: 0 1 auto;
+            width: 70px;
+            min-width: 70px;
+        }
+
         .line-config .color-group {
             display: flex;
             align-items: center;
             gap: 8px;
             flex: 1;
-            min-width: 0;    /* Allow container to shrink */
-            margin: 0 8px;   /* Add some spacing */
+            min-width: 0;
+        }
+
+        .config-file-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .config-file-input {
+            display: block;
+        }
+        
+        #configFilename {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .config-file-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: nowrap;
+            margin-left: auto;
+            flex: 1;
+        }
+
+        .config-file-buttons .btn {
+            flex: 1;
+            min-width: 60px;
+            padding: 4px 8px;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        /* Buttons */
+        .btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            flex: 0 1 auto;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: #1976D2;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-small {
+            padding: 0 8px;
+            height: 28px;
+            min-width: 28px;
+            font-size: 14px;
+        }
+
+        .btn-group {
+            margin-top: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: flex-start;
+        }
+
+        .form-group.config-full .btn {
+            height: 28px;
+            padding: 0 16px;
+            align-self: flex-end;
+        }
+
+        .bottom-panels .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: nowrap;
+        }
+
+        .bottom-panels .btn {
+            flex: 1;
+            min-width: 70px;
+            padding: 4px 10px;
+            white-space: nowrap;
+        }
+
+        .line-config .btn-group {
+            display: flex;
+            flex: 0 0 auto;
+        }
+
+        /* Name edit fields */
+        .name-edit-field {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 120px;
         }
 
         .name-edit-field select,
@@ -728,22 +381,7 @@
             flex-wrap: wrap;
         }
 
-        .name-edit-field {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            flex: 1;
-            min-width: 120px;
-        }
-
-        /* Adjust button styles */
-        .form-group.config-full .btn {
-            height: 28px;  /* Match input height */
-            padding: 0 16px;
-            align-self: flex-end;  /* Align buttons to the bottom of the form group */
-        }
-
-        /* Navigation button styles */
+        /* Navigation and selectors */
         .selector-with-nav {
             display: flex;
             gap: 4px;
@@ -755,30 +393,280 @@
             gap: 2px;
         }
 
-        .btn-small {
-            padding: 0 8px;
-            height: 28px;
-            min-width: 28px;
-            font-size: 14px;
-        }
-
-        /* Adjust select width when nav buttons are present */
         .selector-with-nav select {
-            width: calc(100% - 64px);  /* Account for nav buttons */
+            width: calc(100% - 64px);
         }
 
-        /* Panel headers alignment */
-        .editor-panel h3 {
-            text-align: left;
+        /* Station Sign Preview Styles */
+        .station-sign {
+            background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%);
+            padding: 15px 15px 0;
+            position: relative;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
-        /* Ensure config grid starts after the header */
-        .config-grid, .config-file-section {
+        .station-content {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 60px;
+        }
+
+        .line-marker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: translateX(calc(-100% - 10px));
+            width: 48px;
+            height: 67px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .station-number-container {
+            position: absolute;
+            top: 23px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            border-radius: 5px;
+            padding: 3.7px;
+        }
+
+        .station-number-inner {
+            background: white;
+            border-radius: 2px;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .markerLineCode {
+            color: #000;
+            font-weight: bold;
+            font-size: 13px;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .markerStationCode {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .line-number {
+            color: #000;
+            font-weight: bold;
+            font-size: 18px;
+            line-height: 0.8;
+        }
+
+        .station-info {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: auto;
+            min-width: 200px;
+            margin: 0 auto;
+        }
+
+        .station-name-ja {
+            position: relative;
+            display: inline-block;
+            font-size: 45px;
+            font-weight: bold;
+            line-height: 1.2;
+            font-family: 'MS Gothic', 'Yu Gothic', sans-serif;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .station-name-hiragana {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
             width: 100%;
         }
 
-        /* Responsive adjustments for mobile */
+        .station-name-ko {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .ward-label {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            gap: 1px;
+        }
+
+        .ward-box {
+            background: white;
+            color: black;
+            width: 16px;
+            height: 16px;
+            border: 1px solid black;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .ward-text {
+            background: black;
+            color: white;
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .direction-bar {
+            margin: 0 -15px;
+            height: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            position: relative;
+            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%);
+            overflow: visible;
+        }
+
+        .station-indicator {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 32px;
+            height: 32px;
+        }
+
+        .direction-left {
+            padding-left: 15px;
+            width: 33%;
+            text-align: left;
+        }
+
+        .direction-right {
+            padding-right: 20px;
+            width: 33%;
+            text-align: right;
+        }
+
+        .direction-station {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .station-names-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .station-name-en {
+            font-size: 16px;
+            color: #333;
+        }
+
+        .station-name-en.current {
+            font-weight: bold;
+        }
+
+        .station-name-en-left {
+            width: 33%;
+            text-align: left;
+        }
+
+        .station-name-en-center {
+            width: 33%;
+            text-align: center;
+        }
+
+        .station-name-en-right {
+            width: 33%;
+            text-align: right;
+        }
+
+        /* Media queries - consolidated */
+        @media (max-width: 1200px) {
+            .line-config .color-input {
+                min-width: 90px;
+            }
+            
+            .line-config input[type="text"] {
+                width: 60px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .bottom-panels {
+                flex-direction: column;
+            }
+            
+            .bottom-panels > div {
+                width: 100%;
+            }
+
+            .config-file-buttons {
+                gap: 6px;
+            }
+            
+            .config-file-buttons .btn {
+                min-width: 70px;
+            }
+
+            .line-config .color-input {
+                flex-grow: 1;
+                max-width: none;
+                min-width: 10px;
+            }
+        }
+
         @media (max-width: 768px) {
+            .bottom-panels {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .bottom-panels .editor-panel {
+                flex-wrap: wrap;
+            }
+
+            .config-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+
             /* Optimize Line Config for mobile */
             .color-group {
                 display: grid;
@@ -829,8 +717,8 @@
 
             .form-group.config-full .btn {
                 margin-top: 8px;
-                height: 32px;  /* Slightly taller on mobile */
-                width: 100%;  /* Full width buttons on mobile */
+                height: 32px;
+                width: 100%;
             }
 
             .selector-with-nav {
@@ -842,8 +730,18 @@
             }
 
             .line-config .config-grid {
-                flex-direction: column; /* Stack elements vertically on smaller screens */
-                align-items: stretch; /* Stretch elements to full width */
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .config-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+
+            .config-file-buttons {
+                width: 100%;
             }
         }
     </style>
@@ -862,7 +760,7 @@
         <div class="bottom-panels">
             <!-- Configuration File panel -->
             <div class="editor-panel">
-                <h3>Station Config File Editor V1.2.1</h3>
+                <h3>Station Config File Editor V1.2.2</h3>
                 <div class="config-file-section">
                     <div class="config-file-input control-item">
                         <label for="configFilename">Config Filename</label>
@@ -882,7 +780,7 @@
                 <h3>Line Configuration</h3>
                 <div class="config-grid">
                 <div class="form-group">
-                        <label for="lineSelect">Select Line</label>
+                        <label for="lineSelect">Line</label>
                         <select id="lineSelect" onchange="updateLineSelection()"></select>
                     </div>
                     <div class="color-group">
@@ -1028,42 +926,41 @@
     </div>
 
     <script>
-        // Initialize configData at the top level
-        let configData = {
-            lines: {}
-        };
+        // Main configuration data structure
+        let configData = { lines: {} };
 
-        // Move initialization into DOMContentLoaded
-        document.addEventListener('DOMContentLoaded', function() {
+        // Event handlers and initialization
+        document.addEventListener('DOMContentLoaded', () => {
             initializeEditor();
 
-            // Add event listeners for color inputs
+            // Set up color input event listeners
             document.querySelectorAll('input[type="color"]').forEach(input => {
-                input.addEventListener('input', function() {
-                    const hexInput = this.nextElementSibling;
+                input.addEventListener('input', () => {
+                    const hexInput = input.nextElementSibling;
                     if (hexInput) {
-                        hexInput.value = this.value.toUpperCase();
-                        saveChanges();  // Auto-save when color changes
+                        hexInput.value = input.value.toUpperCase();
+                        saveChanges();
                     }
                 });
             });
 
             document.querySelectorAll('.color-input input[type="text"]').forEach(input => {
-                input.addEventListener('input', function() {
-                    const colorInput = this.previousElementSibling;
-                    if (colorInput && /^#[0-9A-F]{6}$/i.test(this.value)) {
-                        colorInput.value = this.value.toUpperCase();
-                        saveChanges();  // Auto-save when hex value changes
+                input.addEventListener('input', () => {
+                    const colorInput = input.previousElementSibling;
+                    if (colorInput && /^#[0-9A-F]{6}$/i.test(input.value)) {
+                        colorInput.value = input.value.toUpperCase();
+                        saveChanges();
                     }
                 });
             });
         });
-        //initialize editor
-        function initializeEditor() {
+
+        // Core functions
+        const initializeEditor = () => {
             const lineSelect = document.getElementById('lineSelect');
             lineSelect.innerHTML = '';
             
-            if (configData && configData.lines) {
+            if (configData?.lines) {
                 Object.keys(configData.lines).forEach(lineCode => {
                     const option = document.createElement('option');
                     option.value = lineCode;
@@ -1072,25 +969,24 @@
                 });
                 
                 if (lineSelect.options.length > 0) {
-                    lineSelect.selectedIndex = 0;  // This will now select the first actual line
+                    lineSelect.selectedIndex = 0;
                     updateLineSelection();
                 }
             }
             
             updatePreview();
-        }
-        //disable inputs
-        function disableInputs(disabled) {
-            // Disable all inputs except import when no data
+        };
+
+        const disableInputs = (disabled) => {
             document.querySelectorAll('input:not(#configFileInput), select').forEach(input => {
                 input.disabled = disabled;
             });
             document.querySelectorAll('.btn:not([onclick*="configFileInput"])').forEach(btn => {
                 btn.disabled = disabled;
             });
-        }
-        //update line selection
-        function updateLineSelection() {
+        };
+
+        const updateLineSelection = () => {
             const lineCode = document.getElementById('lineSelect')?.value;
             if (!lineCode || !configData.lines[lineCode]) {
                 disableInputs(true);
@@ -1102,18 +998,23 @@
             
             // Update color values
             if (line.style) {
-                document.getElementById('lineMarkerBgColor').value = line.style.lineMarkerBgColor || '#000000';
-                document.getElementById('lineMarkerBgColorHex').value = line.style.lineMarkerBgColor || '#000000';
-                document.getElementById('lineNumberBgColor').value = line.style.lineNumberBgColor || '#80C241';
-                document.getElementById('lineNumberBgColorHex').value = line.style.lineNumberBgColor || '#80C241';
-                document.getElementById('directionBarBgColor').value = line.style.directionBarBgColor || '#006400';
-                document.getElementById('directionBarBgColorHex').value = line.style.directionBarBgColor || '#006400';
+                const colors = {
+                    'lineMarkerBgColor': '#000000',
+                    'lineNumberBgColor': '#80C241',
+                    'directionBarBgColor': '#006400'
+                };
+
+                Object.keys(colors).forEach(colorKey => {
+                    const value = line.style[colorKey] || colors[colorKey];
+                    document.getElementById(colorKey).value = value;
+                    document.getElementById(`${colorKey}Hex`).value = value;
+                });
             }
             
             updateStationSelect(lineCode);
-        }
-        //update station select
-        function updateStationSelect(lineCode) {
+        };
+
+        const updateStationSelect = (lineCode) => {
             const stationSelect = document.getElementById('stationSelect');
             stationSelect.innerHTML = '';
             
@@ -1125,9 +1026,9 @@
             });
 
             updateStationSelection();
-        }
-        //update station selection
-        function updateStationSelection() {
+        };
+
+        const updateStationSelection = () => {
             const lineCode = document.getElementById('lineSelect')?.value;
             const stationName = document.getElementById('stationSelect')?.value;
             
@@ -1146,51 +1047,45 @@
                 // Update station name edit field
                 document.getElementById('stationNameEdit').value = stationName;
 
-                // Use only new property names
+                // Update station fields
                 const stationInfo = station.sInfo;
-                document.getElementById('stationCode').value = stationInfo.sC || '';
-                document.getElementById('stationNameJa').value = stationInfo.Ja || '';
-                document.getElementById('stationNameHiragana').value = stationInfo.Hi || '';
-                document.getElementById('stationNameKo').value = stationInfo.Ko || '';
-                document.getElementById('wardBox').value = stationInfo.wB || '';
+                const fields = ['sC', 'Ja', 'Hi', 'Ko', 'wB'];
+                const ids = ['stationCode', 'stationNameJa', 'stationNameHiragana', 'stationNameKo', 'wardBox'];
+                
+                fields.forEach((field, index) => {
+                    document.getElementById(ids[index]).value = stationInfo[field] || '';
+                });
                 
                 updateTrackSelect();
                 updatePreview();
             } catch (error) {
                 console.error('Error updating station selection:', error);
             }
-        }
-         //update preview
-        function updatePreview() {
-            const lineCode = document.getElementById('lineSelect')?.value;//get line code
-            const stationName = document.getElementById('stationSelect')?.value;//get station name
-            const trackNumber = document.getElementById('trackSelect')?.value;  // Get current track
+        };
+
+        const updatePreview = () => {
+            const lineCode = document.getElementById('lineSelect')?.value;
+            const stationName = document.getElementById('stationSelect')?.value;
+            const trackNumber = document.getElementById('trackSelect')?.value;
             
             if (!lineCode || !stationName || !trackNumber) {
-                document.getElementById('stationSignPreview').innerHTML = '<p>Import the Station Config Json file to preview or add a new line to create from scratch</p>';
+                document.getElementById('stationSignPreview').innerHTML = 
+                    '<p>Import the Station Config Json file to preview or add a new line to create from scratch</p>';
                 return;
             }
 
-            const line = configData.lines[lineCode];//get line
-            const station = line?.stations[stationName];//get station
-            
-            // Use only new property names
+            const line = configData.lines[lineCode];
+            const station = line?.stations[stationName];
             const tracks = station?.Trk;
             const track = tracks?.[trackNumber];
             
-            if (!line || !station || !track) return;//check if line, station, and track are empty
+            if (!line || !station || !track) return;
 
             try {
-                const preview = document.getElementById('stationSignPreview');//get preview
-                
-                // Use only new property names
+                const preview = document.getElementById('stationSignPreview');
                 const stationInfo = station.sInfo;
-                const hasStationCode = !!stationInfo.sC;
-                
-                // Use only new property names
+                const hasStationCode = Boolean(stationInfo.sC);
                 const lineMarker = track.Marker;
-                
-                // Use only new property names
                 const direction = track.Dir;
                 const prev = direction.p;
                 const next = direction.n;
@@ -1201,13 +1096,13 @@
                             <div class="line-marker" style="${hasStationCode ? 
                                 `background: ${line.style?.lineMarkerBgColor || '#000000'}` : 
                                 'background: transparent; box-shadow: none; transform: translate(-55px, -16px)'}">
-                                <div class="line-code-akb">${stationInfo.sC || ''}</div>
+                                <div class="markerStationCode">${stationInfo.sC || ''}</div>
                                 <div class="station-number-container" style="background: ${line.style?.lineNumberBgColor || '#80C241'}">
                                     <div class="station-number-inner">
-                                        <div class="line-code-jy">${lineMarker.LC || ''}</div>
+                                        <div class="markerLineCode">${lineMarker.LC || ''}</div>
                                         <div class="line-number">${lineMarker.sNum || ''}</div>
-                    </div>
-                    </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="station-info">
                                 <div class="station-name-ja">${stationInfo.Ja || ''}</div>
@@ -1218,12 +1113,12 @@
                         <div class="ward-label">
                             <div class="ward-box">${stationInfo.wB || ''}</div>
                             <div class="ward-text">区</div>
-                    </div>
+                        </div>
                         <div class="direction-bar" style="background: ${line.style?.directionBarBgColor || '#006400'}">
                             <div class="station-indicator" style="background: ${line.style?.lineNumberBgColor || '#80C241'}"></div>
                             <div class="direction-left">
                                 <span class="direction-station">${prev.Ja || ''}</span>
-                </div>
+                            </div>
                             <div class="direction-right">
                                 <span class="direction-station">${next.Ja || ''}</span>
                             </div>
@@ -1235,194 +1130,181 @@
                         </div>
                     </div>`;
                 
-                // Manually trigger positioning update after HTML is rendered
+                // Position update for line marker
                 setTimeout(() => {
                     const stationNameJa = preview.querySelector('.station-name-ja');
                     const lineMarker = preview.querySelector('.line-marker');
                     const stationContent = preview.querySelector('.station-content');
                 
-                if (stationNameJa && lineMarker && stationContent) {
+                    if (stationNameJa && lineMarker && stationContent) {
                         const offset = stationNameJa.getBoundingClientRect().left - 
                                      stationContent.getBoundingClientRect().left;
                         lineMarker.style.left = offset + 'px';
                     }
                 }, 50);
-
             } catch (error) {
                 console.error('Error generating preview:', error);
             }
-        }
-        //create default track
-        function createDefaultTrack(lineCode) {
-            return {
-                "Marker": {
-                    "LC": lineCode,
-                    "sNum": "01"
+        };
+
+        const createDefaultTrack = (lineCode) => ({
+            Marker: {
+                LC: lineCode,
+                sNum: "01"
+            },
+            audio: {
+                melody: 1,
+                atos: 1,
+                dC: 1,
+                va: 1
+            },
+            Dir: {
+                p: {
+                    Ja: "前の駅",
+                    En: "Previous Station"
                 },
-                "audio": {
-                    "melody": 1,
-                    "atos": 1,
-                    "dC": 1,
-                    "va": 1
-                },
-                "Dir": {
-                    "p": {
-                        "Ja": "前の駅",
-                        "En": "Previous Station"
-                    },
-                    "n": {
-                        "Ja": "次の駅",
-                        "En": "Next Station"
-                    }
+                n: {
+                    Ja: "次の駅",
+                    En: "Next Station"
                 }
-            };
-        }
-        //add new line
-        function addNewLine() {
+            }
+        });
+
+        // Line management functions
+        const addNewLine = () => {
             const lineCode = prompt('Enter new line code:');
-            if (lineCode) {
-                // Delete the line if it already exists
-                if (configData.lines[lineCode]) {
-                    delete configData.lines[lineCode];
-                }
-                
-                // Use spread operator (more concise) to create new lines object 
-                configData.lines = {
-                    ...configData.lines,
-                    [lineCode]: {
-                style: {
+            if (!lineCode) return;
+            
+            // Delete the line if it already exists
+            if (configData.lines[lineCode]) {
+                delete configData.lines[lineCode];
+            }
+            
+            configData.lines = {
+                ...configData.lines,
+                [lineCode]: {
+                    style: {
                         lineMarkerBgColor: "#000000",
                         lineNumberBgColor: "#80C241",
                         directionBarBgColor: "#006400"
                     },
                     stations: {
                         "Sample Station": {
-                                "sInfo": {
-                                    "sC": "SMP",
-                                    "Ja": "サンプル駅",
-                                    "Hi": "さんぷるえき",
-                                    "Ko": "샘로운역",
-                                    "wB": "山"
-                                },
-                                "Trk": {
+                            sInfo: {
+                                sC: "SMP",
+                                Ja: "サンプル駅",
+                                Hi: "さんぷるえき",
+                                Ko: "샘로운역",
+                                wB: "山"
+                            },
+                            Trk: {
                                 "track1": createDefaultTrack(lineCode)
-                                }
                             }
                         }
                     }
-                };
-                
-                initializeEditor();
-                const lineSelect = document.getElementById('lineSelect');
-                lineSelect.value = lineCode;
-                updateLineSelection();
-            }
-        }
+                }
+            };
+            
+            initializeEditor();
+            const lineSelect = document.getElementById('lineSelect');
+            lineSelect.value = lineCode;
+            updateLineSelection();
+        };
 
-        function addNewStation() {
+        // Station management functions
+        const addNewStation = () => {
             const lineCode = document.getElementById('lineSelect').value;
-            // Get current track information
             const stationSelect = document.getElementById('stationSelect');
             const trackSelect = document.getElementById('trackSelect');
             const currentStation = stationSelect.value;
-            const currentTrack = trackSelect.value;
             
             // Check if next station fields are filled
             const nextStationEn = document.getElementById('nextStationEn').value.trim();
             const nextStationJa = document.getElementById('nextStationJa').value.trim();
             
-            // Use the next station fields if filled, otherwise prompt for name
-            let stationName = "";
+            // Determine station name
+            let stationName = (nextStationEn && nextStationEn !== "Next Station") 
+                ? nextStationEn 
+                : prompt('Enter new station name (English):');
+                
+            if (!stationName || !lineCode) return;
             
-            if (nextStationEn && nextStationEn !== "Next Station") {
-                stationName = nextStationEn;
+            // Get previous station info
+            let prevStationJa = "前の駅";
+            let prevStationEn = "Previous Station";
+            
+            if (currentStation && configData.lines[lineCode].stations[currentStation]) {
+                const currentStationInfo = configData.lines[lineCode].stations[currentStation].sInfo;
+                prevStationJa = currentStationInfo.Ja || "前の駅";
+                prevStationEn = currentStation;
             } else {
-                stationName = prompt('Enter new station name (English):');
-                if (!stationName) return; // User canceled
-            }
-            
-            if (lineCode && stationName) {
-                // Get all existing stations for the current line
                 const existingStations = Object.keys(configData.lines[lineCode].stations);
-                
-                // Find information for the previous station (if any)
-                let prevStationJa = "前の駅";
-                let prevStationEn = "Previous Station";
-                
-                // Use current station as the previous station for the new one
-                if (currentStation && configData.lines[lineCode].stations[currentStation]) {
-                    const currentStationInfo = configData.lines[lineCode].stations[currentStation].sInfo;
-                    prevStationJa = currentStationInfo.Ja || "前の駅";
-                    prevStationEn = currentStation;
-                } else if (existingStations.length > 0) {
-                    // Get the last station in the list to use as the previous station
+                if (existingStations.length > 0) {
                     const lastStation = existingStations[existingStations.length - 1];
                     const lastStationInfo = configData.lines[lineCode].stations[lastStation].sInfo;
                     
                     if (lastStationInfo) {
-                        // Use the last station's Japanese and English names
                         prevStationJa = lastStationInfo.Ja || "前の駅";
                         prevStationEn = lastStation;
                     }
                 }
-                
-                // Create new station with default values
+            }
+            
+            // Create new station
             configData.lines[lineCode].stations[stationName] = {
-                    "sInfo": {
-                        "Ja": nextStationJa && nextStationJa !== "次の駅" ? nextStationJa : "新しい駅",
-                        "sC": "",
-                        "Hi": "あたらしいえき",
-                        "Ko": "새로운역",
-                        "wB": "山"
-                    },
-                    "Trk": {
-                        "track1": {
-                            "Marker": {
-                                "LC": lineCode,
-                                "sNum": "01"
+                sInfo: {
+                    Ja: nextStationJa && nextStationJa !== "次の駅" ? nextStationJa : "新しい駅",
+                    sC: "",
+                    Hi: "あたらしいえき",
+                    Ko: "새로운역",
+                    wB: "山"
+                },
+                Trk: {
+                    "track1": {
+                        Marker: {
+                            LC: lineCode,
+                            sNum: "01"
+                        },
+                        audio: {
+                            melody: 1,
+                            atos: 1,
+                            dC: 1,
+                            va: 1
+                        },
+                        Dir: {
+                            p: {
+                                Ja: prevStationJa,
+                                En: prevStationEn
                             },
-                            "audio": {
-                                "melody": 1,
-                                "atos": 1,
-                                "dC": 1,
-                                "va": 1
-                            },
-                            "Dir": {
-                                "p": {
-                                    "Ja": prevStationJa,
-                                    "En": prevStationEn
-                                },
-                                "n": {
-                                    "Ja": "次の駅",
-                                    "En": "Next Station"
-                                }
+                            n: {
+                                Ja: "次の駅",
+                                En: "Next Station"
                             }
                         }
                     }
-                };
-                
-                // Refresh the UI
-                initializeEditor();
-                
-                // Set selectors to show the newly added station
-                const lineSelect = document.getElementById('lineSelect');
-                lineSelect.value = lineCode;
-                updateLineSelection();
-                
-                const stationSelect = document.getElementById('stationSelect');
-                stationSelect.value = stationName;
-                updateStationSelection();
-                
-                // Set track to track1
-                const trackSelect = document.getElementById('trackSelect');
-                if (trackSelect.options.length > 0) {
-                    trackSelect.value = "track1";
-                    updateTrackSelection();
                 }
+            };
+            
+            // Update UI
+            initializeEditor();
+            const lineSelect = document.getElementById('lineSelect');
+            lineSelect.value = lineCode;
+            updateLineSelection();
+            
+            const newStationSelect = document.getElementById('stationSelect');
+            newStationSelect.value = stationName;
+            updateStationSelection();
+            
+            // Set track to track1
+            const newTrackSelect = document.getElementById('trackSelect');
+            if (newTrackSelect.options.length > 0) {
+                newTrackSelect.value = "track1";
+                updateTrackSelection();
             }
-        }
+        };
 
-        function saveChanges() {
+        // Save changes to configuration
+        const saveChanges = () => {
             const lineCode = document.getElementById('lineSelect')?.value;
             if (!lineCode) return;
 
@@ -1466,6 +1348,7 @@
                     }
                 };
 
+                // Update station info
                 const station = configData.lines[lineCode].stations[stationName];
                 station.sInfo = {
                     sC: document.getElementById('stationCode').value,
@@ -1480,36 +1363,32 @@
                 console.error('Error saving changes:', error);
                 alert('Error saving changes. Check console for details.');
             }
-        }
+        };
 
-        // Function to convert internal format to export format
-        function prepareForExport(data) {
+        // Data format conversion functions
+        const prepareForExport = (data) => {
             const exportData = JSON.parse(JSON.stringify(data));
             
-            for (const line in exportData.lines) {
-                for (const station in exportData.lines[line].stations) {
-                    const stationData = exportData.lines[line].stations[station];
-                    
+            Object.entries(exportData.lines).forEach(([_, line]) => {
+                Object.entries(line.stations).forEach(([_, station]) => {
                     // Convert from internal format to export format
-                    if (stationData.sInfo) {
-                        stationData.i = [
-                            stationData.sInfo.sC || "",
-                            stationData.sInfo.Ja || "",
-                            stationData.sInfo.Hi || "",
-                            stationData.sInfo.Ko || "",
-                            stationData.sInfo.wB || ""
+                    if (station.sInfo) {
+                        station.i = [
+                            station.sInfo.sC || "",
+                            station.sInfo.Ja || "",
+                            station.sInfo.Hi || "",
+                            station.sInfo.Ko || "",
+                            station.sInfo.wB || ""
                         ];
-                        delete stationData.sInfo;
+                        delete station.sInfo;
                     }
                     
-                    if (stationData.Trk) {
-                        stationData.t = [];
+                    if (station.Trk) {
+                        station.t = [];
                         
                         // Convert each track from object to array
-                        for (const trackName in stationData.Trk) {
-                            const track = stationData.Trk[trackName];
-                            
-                            stationData.t.push([
+                        Object.entries(station.Trk).forEach(([trackName, track]) => {
+                            station.t.push([
                                 trackName,
                                 track.Marker?.LC || "",
                                 track.Marker?.sNum || "",
@@ -1528,44 +1407,41 @@
                                     track.Dir?.n?.En || ""
                                 ]
                             ]);
-                        }
+                        });
                         
-                        delete stationData.Trk;
+                        delete station.Trk;
                     }
-                }
-            }
+                });
+            });
             
             return exportData;
-        }
+        };
 
-        // Function to convert import format to internal format
-        function prepareForImport(data) {
+        const prepareForImport = (data) => {
             const importData = JSON.parse(JSON.stringify(data));
             
-            for (const line in importData.lines) {
-                for (const station in importData.lines[line].stations) {
-                    const stationData = importData.lines[line].stations[station];
-                    
+            Object.entries(importData.lines).forEach(([_, line]) => {
+                Object.entries(line.stations).forEach(([_, station]) => {
                     // Convert from import format to internal format
-                    if (stationData.i && Array.isArray(stationData.i)) {
-                        stationData.sInfo = {
-                            sC: stationData.i[0] || "",
-                            Ja: stationData.i[1] || "",
-                            Hi: stationData.i[2] || "",
-                            Ko: stationData.i[3] || "",
-                            wB: stationData.i[4] || ""
+                    if (station.i && Array.isArray(station.i)) {
+                        station.sInfo = {
+                            sC: station.i[0] || "",
+                            Ja: station.i[1] || "",
+                            Hi: station.i[2] || "",
+                            Ko: station.i[3] || "",
+                            wB: station.i[4] || ""
                         };
-                        delete stationData.i;
+                        delete station.i;
                     }
                     
-                    if (stationData.t && Array.isArray(stationData.t)) {
-                        stationData.Trk = {};
+                    if (station.t && Array.isArray(station.t)) {
+                        station.Trk = {};
                         
                         // Convert each track from array to object
-                        stationData.t.forEach(track => {
+                        station.t.forEach(track => {
                             const trackName = track[0];
                             
-                            stationData.Trk[trackName] = {
+                            station.Trk[trackName] = {
                                 Marker: {
                                     LC: track[1] || "",
                                     sNum: track[2] || ""
@@ -1589,81 +1465,79 @@
                             };
                         });
                         
-                        delete stationData.t;
+                        delete station.t;
                     }
-                }
-            }
+                });
+            });
             
             return importData;
-        }
+        };
 
-        // Update the importConfig function to handle the new format
-        function importConfig(input) {
+        // File operations
+        const importConfig = (input) => {
             const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const importedData = JSON.parse(e.target.result);
-                        
-                        // Convert to internal format for editor compatibility
-                        configData = prepareForImport(importedData);
-                        
-                        document.getElementById('configFilename').value = file.name;
-                        initializeEditor();
-                        
-                        // Get first available line
-                        const lineSelect = document.getElementById('lineSelect');
-                        const firstLine = Object.keys(configData.lines)[0];
-                        if (firstLine) {
-                            lineSelect.value = firstLine;
-                            updateLineSelection();
-                            
-                            // Get first available station
-                            const stationSelect = document.getElementById('stationSelect');
-                            if (stationSelect.options.length > 0) {
-                                stationSelect.selectedIndex = 0;
-                                updateStationSelection();
-                            }
-                        }
-                        
-                        disableInputs(false);
-                    } catch (error) {
-                        alert('Error parsing JSON file: ' + error.message);
-                        console.error('Full error:', error);
-                        console.log('Attempted to parse:', e.target.result);
-                    }
-                };
-                reader.readAsText(file, 'UTF-8');
-            }
-        }
+            if (!file) return;
 
-        // Update the exportConfig function to export in the new format
-        function exportConfig() {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    configData = prepareForImport(importedData);
+                    
+                    document.getElementById('configFilename').value = file.name;
+                    initializeEditor();
+                    
+                    // Select first line
+                    const lineSelect = document.getElementById('lineSelect');
+                    const firstLine = Object.keys(configData.lines)[0];
+                    if (firstLine) {
+                        lineSelect.value = firstLine;
+                        updateLineSelection();
+                        
+                        // Select first station
+                        const stationSelect = document.getElementById('stationSelect');
+                        if (stationSelect.options.length > 0) {
+                            stationSelect.selectedIndex = 0;
+                            updateStationSelection();
+                        }
+                    }
+                    
+                    disableInputs(false);
+                } catch (error) {
+                    alert('Error parsing JSON file: ' + error.message);
+                    console.error('Full error:', error);
+                    console.log('Attempted to parse:', e.target.result);
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        };
+
+        const exportConfig = () => {
             // Convert to the export format
             const exportData = prepareForExport(configData);
             
-            // Json minification function to save space
+            // JSON minification
             const jsonStr = JSON.stringify(exportData, null, 1);
             const fixedStr = jsonStr.replace(/\\\\/g, '\\')
-                           .replace(/\n\s+/g, '\n') // Remove extra spaces at start of lines
-                           .replace(/{\n/g, '{')     // Remove newline after {
-                           .replace(/\n}/g, '}')     // Remove newline before }
-                           .replace(/,\n/g, ',')     // Remove newline after commas
-                           .replace(/\[\n/g, '[')    // Remove newline after [
-                           .replace(/\n\]/g, ']')    // Remove newline before ]
-                           .replace(/": /g, '":');    // Remove space after colons
+                           .replace(/\n\s+/g, '\n')
+                           .replace(/{\n/g, '{')
+                           .replace(/\n}/g, '}')
+                           .replace(/,\n/g, ',')
+                           .replace(/\[\n/g, '[')
+                           .replace(/\n\]/g, ']')
+                           .replace(/": /g, '":');
             
             const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(fixedStr);
-            
             const filename = document.getElementById('configFilename').value || 'stations_config.json';
+            
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
             linkElement.setAttribute('download', filename);
             linkElement.click();
-        }
+        };
 
-        function updateTrackSelection() {
+        // Track management functions
+        const updateTrackSelection = () => {
             const lineCode = document.getElementById('lineSelect')?.value;
             const stationName = document.getElementById('stationSelect')?.value;
             const trackNumber = document.getElementById('trackSelect')?.value;
@@ -1683,37 +1557,35 @@
                 // Update track name edit field
                 document.getElementById('trackNameEdit').value = trackNumber;
 
-                // Use only new property names
+                // Update marker fields
                 const lineMarker = track.Marker;
                 document.getElementById('trackLineCode').value = lineMarker.LC || '';
                 document.getElementById('trackStationNumber').value = lineMarker.sNum || '';
 
                 // Update audio tracks
                 if (track.audio) {
-                    document.getElementById('melodyTrack').value = track.audio.melody || 1;
-                    document.getElementById('atosTrack').value = track.audio.atos || 1;
-                    document.getElementById('doorChimeTrack').value = track.audio.dC || 1;
-                    document.getElementById('vaTrack').value = track.audio.va || 1;
+                    const audioFields = ['melody', 'atos', 'dC', 'va'];
+                    const audioIds = ['melodyTrack', 'atosTrack', 'doorChimeTrack', 'vaTrack'];
+                    
+                    audioFields.forEach((field, index) => {
+                        document.getElementById(audioIds[index]).value = track.audio[field] || 1;
+                    });
                 }
 
                 // Update direction information
-                // Use only new property names
                 const direction = track.Dir;
-                const prev = direction.p;
-                const next = direction.n;
-                
-                document.getElementById('prevStationJa').value = prev.Ja || '';
-                document.getElementById('prevStationEn').value = prev.En || '';
-                document.getElementById('nextStationJa').value = next.Ja || '';
-                document.getElementById('nextStationEn').value = next.En || '';
+                document.getElementById('prevStationJa').value = direction.p.Ja || '';
+                document.getElementById('prevStationEn').value = direction.p.En || '';
+                document.getElementById('nextStationJa').value = direction.n.Ja || '';
+                document.getElementById('nextStationEn').value = direction.n.En || '';
 
                 updatePreview();
             } catch (error) {
                 console.error('Error updating track selection:', error);
             }
-        }
+        };
 
-        function addNewTrack() {
+        const addNewTrack = () => {
             const lineCode = document.getElementById('lineSelect').value;
             const stationName = document.getElementById('stationSelect').value;
             if (!lineCode || !stationName) return;
@@ -1723,76 +1595,72 @@
                 station.Trk = {};
             }
 
-            // Get all existing tracks
+            // Get existing tracks info
             const trackKeys = Object.keys(station.Trk);
             const trackCount = trackKeys.length;
-            
-            // Get the last track's data (if any tracks exist)
             const lastTrack = trackCount > 0 ? station.Trk[trackKeys[trackCount - 1]] : null;
             
-            // Generate new track name (try to maintain naming pattern if possible)
+            // Generate new track name
             let newTrackName;
             if (trackCount === 0) {
-                newTrackName = 'track 1';
+                newTrackName = 'track1';
             } else {
-                // Try to extract number from last track name
                 const match = trackKeys[trackCount - 1].match(/(\D*)(\d+)$/);
                 if (match) {
-                    // If last track had a number, increment it
+                    // Increment number in track name
                     const prefix = match[1];
                     const number = parseInt(match[2]) + 1;
                     newTrackName = `${prefix}${number}`;
                 } else {
-                    // If no number pattern, append number to last track name
-                    newTrackName = `${trackKeys[trackCount - 1]} 2`;
+                    // Add number suffix
+                    newTrackName = `${trackKeys[trackCount - 1]}2`;
                 }
             }
             
-            // Create new track with copied and swapped values
+            // Create new track with data from previous track
             station.Trk[newTrackName] = {
                 Marker: {
-                    LC: lastTrack ? lastTrack.Marker?.LC : lineCode,
-                    sNum: lastTrack ? lastTrack.Marker?.sNum : "01"
+                    LC: lastTrack?.Marker?.LC || lineCode,
+                    sNum: lastTrack?.Marker?.sNum || "01"
                 },
                 audio: {
-                    melody: lastTrack ? lastTrack.audio?.melody : 1,
-                    atos: lastTrack ? lastTrack.audio?.atos : 1,
-                    dC: lastTrack ? lastTrack.audio?.dC : 1,
-                    va: lastTrack ? lastTrack.audio?.va : 1
+                    melody: lastTrack?.audio?.melody || 1,
+                    atos: lastTrack?.audio?.atos || 1,
+                    dC: lastTrack?.audio?.dC || 1,
+                    va: lastTrack?.audio?.va || 1
                 },
                 Dir: {
-                    // Swap previous and next station information
+                    // Swap previous and next station
                     p: {
-                        Ja: lastTrack ? lastTrack.Dir?.n?.Ja : "",
-                        En: lastTrack ? lastTrack.Dir?.n?.En : ""
+                        Ja: lastTrack?.Dir?.n?.Ja || "",
+                        En: lastTrack?.Dir?.n?.En || ""
                     },
                     n: {
-                        Ja: lastTrack ? lastTrack.Dir?.p?.Ja : "",
-                        En: lastTrack ? lastTrack.Dir?.p?.En : ""
+                        Ja: lastTrack?.Dir?.p?.Ja || "",
+                        En: lastTrack?.Dir?.p?.En || ""
                     }
                 }
             };
             
             updateTrackSelect();
-            // Auto-select the new track
             const trackSelect = document.getElementById('trackSelect');
             trackSelect.value = newTrackName;
             updateTrackSelection();
-        }
+        };
 
-        function updateTrackSelect() {
+        const updateTrackSelect = () => {
             const lineCode = document.getElementById('lineSelect').value;
             const stationName = document.getElementById('stationSelect').value;
             const trackSelect = document.getElementById('trackSelect');
             
             trackSelect.innerHTML = '';
             
-            if (!lineCode || !stationName || !configData.lines[lineCode]?.stations[stationName]?.Trk) {
+            const tracks = configData.lines[lineCode]?.stations[stationName]?.Trk;
+            if (!tracks) {
                 trackSelect.innerHTML = '<option value="">No tracks available</option>';
                 return;
             }
             
-            const tracks = configData.lines[lineCode].stations[stationName].Trk;
             Object.keys(tracks).forEach(trackNumber => {
                 const option = document.createElement('option');
                 option.value = trackNumber;
@@ -1804,10 +1672,10 @@
                 trackSelect.selectedIndex = 0;
                 updateTrackSelection();
             }
-        }
+        };
 
-        // Add delete functions
-        function deleteLine() {
+        // Delete functions
+        const deleteLine = () => {
             const lineCode = document.getElementById('lineSelect').value;
             if (!lineCode) return;
             
@@ -1815,9 +1683,9 @@
                 delete configData.lines[lineCode];
                 initializeEditor();
             }
-        }
+        };
 
-        function deleteStation() {
+        const deleteStation = () => {
             const lineCode = document.getElementById('lineSelect').value;
             const stationName = document.getElementById('stationSelect').value;
             if (!lineCode || !stationName) return;
@@ -1826,9 +1694,9 @@
                 delete configData.lines[lineCode].stations[stationName];
                 updateStationSelect(lineCode);
             }
-        }
+        };
 
-        function deleteTrack() {
+        const deleteTrack = () => {
             const lineCode = document.getElementById('lineSelect').value;
             const stationName = document.getElementById('stationSelect').value;
             const trackNumber = document.getElementById('trackSelect').value;
@@ -1838,25 +1706,24 @@
                 delete configData.lines[lineCode].stations[stationName].Trk[trackNumber];
                 updateTrackSelect();
             }
-        }
+        };
 
-        function updateStationName() {
+        // Update name functions
+        const updateStationName = () => {
             const lineCode = document.getElementById('lineSelect').value;
             const stationSelect = document.getElementById('stationSelect');
             const oldName = stationSelect.value;
             const newName = document.getElementById('stationNameEdit').value.trim();
             
-            if (!newName || !lineCode || !oldName) return;
+            if (!newName || !lineCode || !oldName || newName === oldName) return;
             
             try {
-                // Create copy of station data
-                const stationData = configData.lines[lineCode].stations[oldName];
-                // Delete old station entry
+                // Clone station data and create with new name
+                const stationData = JSON.parse(JSON.stringify(configData.lines[lineCode].stations[oldName]));
                 delete configData.lines[lineCode].stations[oldName];
-                // Add station with new name
                 configData.lines[lineCode].stations[newName] = stationData;
                 
-                // Update station select
+                // Update UI
                 updateStationSelect(lineCode);
                 stationSelect.value = newName;
                 document.getElementById('stationNameEdit').value = newName;
@@ -1865,26 +1732,26 @@
                 console.error('Error updating station name:', error);
                 alert('Error updating station name');
             }
-        }
+        };
 
-        function updateTrackName() {
+        const updateTrackName = () => {
             const lineCode = document.getElementById('lineSelect').value;
             const stationName = document.getElementById('stationSelect').value;
             const trackSelect = document.getElementById('trackSelect');
             const oldName = trackSelect.value;
             const newName = document.getElementById('trackNameEdit').value.trim();
             
-            if (!newName || !lineCode || !stationName || !oldName) return;
+            if (!newName || !lineCode || !stationName || !oldName || newName === oldName) return;
             
             try {
-                // Create copy of track data
-                const trackData = configData.lines[lineCode].stations[stationName].Trk[oldName];
-                // Delete old track entry
+                // Clone track data and create with new name
+                const trackData = JSON.parse(JSON.stringify(
+                    configData.lines[lineCode].stations[stationName].Trk[oldName]
+                ));
                 delete configData.lines[lineCode].stations[stationName].Trk[oldName];
-                // Add track with new name
                 configData.lines[lineCode].stations[stationName].Trk[newName] = trackData;
                 
-                // Update track select
+                // Update UI
                 updateTrackSelect();
                 trackSelect.value = newName;
                 document.getElementById('trackNameEdit').value = newName;
@@ -1893,9 +1760,10 @@
                 console.error('Error updating track name:', error);
                 alert('Error updating track name');
             }
-        }
+        };
 
-        function navigateStation(direction) {
+        // Navigation function
+        const navigateStation = (direction) => {
             const stationSelect = document.getElementById('stationSelect');
             const currentIndex = stationSelect.selectedIndex;
             
@@ -1906,7 +1774,7 @@
             }
             
             updateStationSelection();
-        }
+        };
     </script>
 </body>
 </html> 
