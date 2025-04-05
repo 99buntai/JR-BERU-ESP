@@ -100,7 +100,7 @@ https://github.com/user-attachments/assets/cd463d8b-be39-4bcc-a3f9-045f05dc00bd
 | GPIO17 | DFPlayer TX       |
 | GPIO4  | Main Button Input |
 
-<img src="https://github.com/user-attachments/assets/32dc37f2-a0c2-441c-9ef2-05b297558cea" alt="Wiring" style="width:40%; height:auto; ">
+<img src="https://github.com/user-attachments/assets/e2ea4942-b499-4de9-a3f0-4eed299d5568" alt="Wiring" style="width:40%; height:auto; ">
 
 ---
 
