@@ -192,7 +192,7 @@ Cut away all the original contactor and glue in a momentary switch.
 ### USB-C Port Connection
 Create a USB-C port connection to the ESP32 board.
 <p align="center">
-  <img width="318" alt="USB-C Connection" src="https://github.com/user-attachments/assets/42d0ba40-b03e-414c-a4b5-ffe235fed302">
+  <img width="338" alt="USB-C Connection" src="https://github.com/user-attachments/assets/42d0ba40-b03e-414c-a4b5-ffe235fed302">
 </p>
 
 ### Final Assembly
@@ -208,7 +208,7 @@ Completed installation in the housing.
 - **URL**: `http://[device-ip]`
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/fd04da57-b5ee-4061-a439-a20b33faee46" alt="Web Interface Access" width="40%">
+  <img src="https://github.com/user-attachments/assets/fd04da57-b5ee-4061-a439-a20b33faee46" alt="Web Interface Access" width="30%">
 </p>
 
 ---
