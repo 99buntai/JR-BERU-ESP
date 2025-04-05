@@ -1,8 +1,8 @@
 # JR-Beru (JR発車ベル) 
-<p align="center">
+
 [![GitHub release](https://img.shields.io/badge/release-ESP32--MCU--R0.4.16%20WebUI--R3.2.8-blue)](https://github.com/99buntai/JR-BERU-ESP/releases)
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](https://creativecommons.org/licenses/by-nc/4.0/)
-</p>
+
 
 A Japanese train station departure bell and announcement system hardware replica with a responsive web-based control interface. Designed to run on ESP32 microcontrollers and to be installed into authentic housing (KASUGA BSW215B3), JR-Beru brings the nostalgic sounds of Japanese train stations to your home with both physical and web-based remote control options.
 
