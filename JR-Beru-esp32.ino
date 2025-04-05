@@ -417,12 +417,12 @@ void handleRoot() {
                 // Station info
                 ".station-info {position:relative;display:flex;flex-direction:column;align-items:center;width:auto;min-width:200px;margin:0 auto}"
                 ".staName-ja,.staName-hiragana,.staName-ko {text-align:center}"
-                ".staName-ja {position:relative;display:inline-block;font-size:42px;font-weight:700;line-height:1.2;font-family:'MS Gothic','Yu Gothic',sans-serif;white-space:nowrap}"
+                ".staName-ja {position:relative;display:inline-block;font-size:42px;font-weight:700;line-height:1.2;font-family:'MS Gothic','Yu Gothic',sans-serif;letter-spacing:6px}"
                 ".staName-hiragana {font-size:16px;color:#333;font-weight:700}"
                 ".staName-ko {font-size:14px;color:#666;margin-bottom:6px}"
                 
                 // Ward label
-                ".ward-label {position:absolute;top:15px;right:50px;display:flex;gap:1px}"
+                ".ward-label {position:absolute;top:15px;right:30px;display:flex;gap:1px}"
                 ".ward-box,.ward-text {width:16px;height:16px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:12px}"
                 ".ward-box {background:#fff;color:#000;border:1px solid #000}"
                 ".ward-text {background:#000;color:#fff}"
@@ -435,7 +435,7 @@ void handleRoot() {
                 ".direction-left,.direction-right {width:33%}"
                 ".direction-left {font-weight:700;padding-left:15px;text-align:left}"
                 ".direction-right {font-weight:700;padding-right:20px;text-align:right}"
-                ".direction-station {font-size:16px;font-weight:700}"
+                ".direction-station {font-size:20px;font-weight:700}"
                 
                 // English station names
                 ".staName-en {font-size:16px;color:#333}"
@@ -2046,40 +2046,40 @@ bool loadStationConfig() {
 //===============================================================
 // Select First Available Options
 //===============================================================
-void selectFirstAvailableOptions() {
-    String firstLine;
-    JsonObject lines = stationConfig["lines"];
-    for (JsonPair line : lines) {
-        firstLine = String(line.key().c_str());
-        break;
+void selectFirstAvailableOptions() {//select the first available options
+    String firstLine;//set the first line
+    JsonObject lines = stationConfig["lines"];//get the lines
+    for (JsonPair line : lines) {//loop through the lines
+        firstLine = String(line.key().c_str());//set the first line
+        break;//break the loop
     }
   
-    String firstStation;
-    JsonObject stations = lines[firstLine]["stations"];
-    for (JsonPair station : stations) {
-        firstStation = String(station.key().c_str());
-        break;
+    String firstStation;//set the first station
+    JsonObject stations = lines[firstLine]["stations"];//get the stations
+    for (JsonPair station : stations) {//loop through the stations
+        firstStation = String(station.key().c_str());//set the first station
+        break;//break the loop
     }
     
-    String firstTrack;
-    JsonArray tracks = stations[firstStation]["t"];
-    if (tracks.size() > 0) {
-        firstTrack = tracks[0][0].as<String>();  
-    } else {
-        return;
+    String firstTrack;//set the first track
+    JsonArray tracks = stations[firstStation]["t"];//get the tracks
+    if (tracks.size() > 0) {//if the tracks size is greater than 0
+        firstTrack = tracks[0][0].as<String>();//set the first track
+    } else {//if the tracks size is not greater than 0
+        return;//return
     }
     
-    JsonObject stationData;
-    JsonObject style;
-    if (!getStationData(firstLine, firstStation, stationData, style)) {
-        return;
+    JsonObject stationData;//set the station data
+    JsonObject style;//set the style
+    if (!getStationData(firstLine, firstStation, stationData, style)) {//if the station data is not found
+        return;//return
     }
     
     // Create a temporary track object
-    StaticJsonDocument<512> trackDoc;
-    JsonObject trackData = trackDoc.to<JsonObject>();
-    if (!findTrackData(stationData, firstTrack, trackData)) {
-        return;
+    StaticJsonDocument<512> trackDoc;//set the track doc
+    JsonObject trackData = trackDoc.to<JsonObject>();//set the track data
+    if (!findTrackData(stationData, firstTrack, trackData)) {//if the track data is not found
+        return;//return
     }
     
     // Update currentStation with default values

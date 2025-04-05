@@ -496,7 +496,7 @@
             line-height: 1.2;
             font-family: 'MS Gothic', 'Yu Gothic', sans-serif;
             text-align: center;
-            white-space: nowrap;
+            letter-spacing: 6px;
         }
 
         .station-name-hiragana {
@@ -582,7 +582,7 @@
         }
 
         .direction-station {
-            font-size: 16px;
+            font-size: 20px;
             font-weight: bold;
         }
 
@@ -878,7 +878,6 @@
                     </div>
                     <button class="btn" onclick="addNewTrack()">Add</button>
                     <button class="btn btn-danger" onclick="deleteTrack()">Delete</button>
-                    <button class="btn" onclick="saveChanges()">Save Changes</button>
                 </div>
                 <div class="form-group">
                     <label>Line Code</label>
@@ -953,7 +952,44 @@
                     }
                 });
             });
+
+            // Add auto-save for all relevant form fields
+            setupAutoSave();
         });
+
+        // Set up auto-save for all form inputs
+        const setupAutoSave = () => {
+            // Add event listeners to all text/number inputs except color hex inputs (already handled)
+            document.querySelectorAll('input[type="text"]:not(.color-input input), input[type="number"]').forEach(input => {
+                input.addEventListener('change', saveChanges);
+                input.addEventListener('input', debounce(saveChanges, 100));
+            });
+
+            // Add event listeners to station and track configuration inputs
+            document.querySelectorAll('#stationCode, #stationNameJa, #stationNameHiragana, #stationNameKo, #wardBox').forEach(input => {
+                input.addEventListener('change', saveChanges);
+                input.addEventListener('input', debounce(saveChanges, 100));
+            });
+
+            document.querySelectorAll('#trackLineCode, #trackStationNumber, #melodyTrack, #atosTrack, #doorChimeTrack, #vaTrack').forEach(input => {
+                input.addEventListener('change', saveChanges);
+                input.addEventListener('input', debounce(saveChanges, 100));
+            });
+
+            document.querySelectorAll('#prevStationJa, #prevStationEn, #nextStationJa, #nextStationEn').forEach(input => {
+                input.addEventListener('change', saveChanges);
+                input.addEventListener('input', debounce(saveChanges, 100));
+            });
+        };
+
+        // Debounce function to prevent too many saves during typing
+        const debounce = (func, delay) => {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), delay);
+            };
+        };
 
         // Core functions
         const initializeEditor = () => {
