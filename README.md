@@ -159,7 +159,7 @@ You can use the included station config editor to create or modify configuration
 <img width="218" alt="Screenshot 2024-12-25 at 16 15 10" src="https://github.com/user-attachments/assets/42d0ba40-b03e-414c-a4b5-ffe235fed302" />
 
 - Final installation 
-<img width="349" alt="Screenshot 2024-12-25 at 16 14 58" src="https://github.com/user-attachments/assets/9a75d714-3629-457a-b01a-fbb4c9df8dc0" />
+<img width="349" alt="webUI" src="https://github.com/user-attachments/assets/fd04da57-b5ee-4061-a439-a20b33faee46" />
 
 ---
 
