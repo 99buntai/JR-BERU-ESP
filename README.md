@@ -232,51 +232,71 @@ The device outputs detailed status information via Serial (115200 baud rate). Us
 ### Boot Sequence Output
 
 ```
-===================
- JR-Beru Booting 
-===================
-Firmware Version: ESP32-MCU-R0.4.16 WebUI-R3.2.8
+=================================
+|        JR-Beru Booting        |
+=================================
+Firmware Version: ESP32-MCU-Rx.x.x WebUI-Rx.x.x
+
 Initializing MP3-Player ... (May take 3~5 seconds)
 MP3-Player online.
-=====Audio File Count:=====
-Melody Files: xx
-Atos Files: xx
-DoorChime Files: xx
-VA Files: xx
+
+=== Indexing Audio File ===
+Melody Files: x
+Atos Files: x
+DoorChime Files: x
+VA Files: x
 ===========================
+
+
 ===== Loading Station Config Json=====
 Config file size: xx bytes
 Free heap before reading: xx
-Free heap before parsing: xx
-Parsing JSON string...
 Free heap after parsing: xx
 Station Config Json Loaded
 Final heap after loading: xx
 ======================================
 
+Station config loaded successfully
+
 === Loading Device State ===
+
 Stored values:
 Random Play: OFF
-Volume: 21
+Volume: xx
+Current Melody: xx, Current Atos: xx, Current DoorChime: xx, Current VA: xx
 Playback Mode: sequence
-Restoring station selection:
-Line: JY, Station: Shimbashi, Track: 4
-Station restored successfully
-===========================
 
-PlayingFolder: 1
-RandomPlay: 29/72
+Restoring station selection:
+Line: xx, Station: xx, Track: xx
+Station restored successfully
+============================
+
 *wm:AutoConnect 
-*wm:Connecting to SAVED AP: AP
+*wm:Connecting to SAVED AP: xx
 *wm:AutoConnect: SUCCESS 
-*wm:STA IP Address: 192.168.1.2
+*wm:STA IP Address: xx
 WiFi Connected!
-IP Address: 192.168.1.2
+IP Address: xx
 Web server started!
+PlayingFolder: xx
+RandomPlay: xx/xx
+
 ========Boot up Completed!========
 
-Serial shell activated. Type 'help' for available commands.
-JR-Beru_: 
+
+======== System Health ========
+Memory    : xx% used (xx KB free)
+Flash     : xx% used (xx KB free)
+SPIFFS    : xx% used (xx KB free)
+CPU Temp  : xx°C
+===============================
+
+
+Welcome to JR-Beru Shell. Type 'help' for available commands.
+Firmware Version: ESP32-MCU-Rx.x.x WebUI-Rx.x.x
+
+JR-Beru:_$ 
+
 ```
 
 ### Audio Playback Status
@@ -332,7 +352,7 @@ The device includes an interactive command-line interface accessible through the
 | `play chime` | Play current door chime |
 | `play va` | Play current platform announcement |
 | `ls`  `/` | List files on SPIFFS |
-| `ls stations` | List available stations with their tracks |
+| `ls stations`| List available stations with their tracks |
 | `station [line] [station] [track]` | Set current station (e.g., `station JY Tokyo 4`) |
 | `reset player` | Reset the DFPlayer Mini |
 | `reset wifi` | Reset WiFi settings |
