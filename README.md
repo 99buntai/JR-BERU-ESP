@@ -43,7 +43,7 @@ https://github.com/user-attachments/assets/d483ad4e-555a-42a0-9bc5-4ab3171fd644
   - Direction indicators for prev/next stations.
 - **Real-time Controls**: Instant feedback and response to user inputs.
 
-<img src="https://github.com/user-attachments/assets/762f0230-c717-4456-a0a9-21966e94b34c" alt="WEB-UI" style="width:90%; height:auto; ">
+<img src="https://github.com/user-attachments/assets/762f0230-c717-4456-a0a9-21966e94b34c" alt="WEB-UI" style="width:100%; height:auto; ">
 
 
 
