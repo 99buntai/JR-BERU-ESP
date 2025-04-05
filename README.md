@@ -332,7 +332,7 @@ The device includes an interactive command-line interface accessible through the
 | `play chime` | Play current door chime |
 | `play va` | Play current platform announcement |
 | `ls`  `/` | List files on SPIFFS |
-| `ls stations` or `list stations` | List available stations with their tracks |
+| `ls stations` | List available stations with their tracks |
 | `station [line] [station] [track]` | Set current station (e.g., `station JY Tokyo 4`) |
 | `reset player` | Reset the DFPlayer Mini |
 | `reset wifi` | Reset WiFi settings |
