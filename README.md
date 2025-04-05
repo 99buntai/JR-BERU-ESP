@@ -311,15 +311,18 @@ After a successful upload:
 
 ### ESP32-MCU-R0.4.16 WebUI-R3.2.8
 
+- Web editor V1.2.2
 - Enhanced error handling with consistent modal dialogs for all errors
 - Optimized JavaScript code for better performance and reduced size
 - Improved UI components with consistent styling and better feedback
 - Increased button handler task stack size for improved stability
 - Added better code organization with descriptive comments
 - Fixed JSON error parsing and display from backend responses
+- Added JR-BERU Shell CLI for device control and diagnostics
 
 ### ESP32-MCU-R0.4.15 WebUI-R3.2.7
 
+- Added json file validation and error recovery
 - Improved error handling and user feedback
 - Enhanced stability for button handling
 - Fixed minor UI issues
@@ -327,20 +330,21 @@ After a successful upload:
 
 ### ESP32-MCU-R0.4.9 WebUI-R3.2.5
 
+- Added ability to upload station config via web interface
 - Migrated to ESP32 platform for improved performance and reliability
 - Added station configuration editor
 - Improved configuration file validation
 - Added file size limit (100KB) for uploads
 - Enhanced memory management for large configuration files
-- Improved station sign display
+- Dynamic station sign display
 
-### MCU-R0.3.7 WebUI-R2.0.5
+### MCU-R0.3.7 WebUI-R2.0.5 (for ESP8266, nolonger supported and maintained)
 
 - More accurate station sign display
 - Improved audio control reliability
 - Added Reset DF-Player support in WebUI
 
-### MCU-R0.3.5 WebUI-R2.0.2
+### MCU-R0.3.5 WebUI-R2.0.2 (for ESP8266, nolonger supported and maintained)
 
 - Enhanced station sign display
 - Improved audio control reliability
