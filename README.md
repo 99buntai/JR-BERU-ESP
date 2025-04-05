@@ -34,7 +34,6 @@ A Japanese train station departure bell and announcement system hardware replica
 ## Live Demo (Un-mute to listen)
 <p align="center">
   <a href="https://github.com/user-attachments/assets/cd463d8b-be39-4bcc-a3f9-045f05dc00bd">
-    <img src="https://img.shields.io/badge/Watch-Demo%20Video-red?style=for-the-badge" alt="Watch Demo Video">
   </a>
 </p>
 
