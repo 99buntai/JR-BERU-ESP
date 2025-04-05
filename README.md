@@ -1,14 +1,42 @@
-# JR-Beru (JR発車ベル)
+# JR-Beru (JR発車ベル) 
+[![GitHub release](https://img.shields.io/badge/release-ESP32--MCU--R0.4.16%20WebUI--R3.2.8-blue)](https://github.com/99buntai/JR-BERU-ESP/releases)
+[![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](https://creativecommons.org/licenses/by-nc/4.0/)
 
-A Japanese train station departure bell and announcement system hardware replica with a responsive web-based control interface, designed to run on ESP32 microcontrollers and to be installed into the authentic housing(KASUGA BSW215B3). JR-Beru brings the nostalgic sounds of Japanese train stations to your home, offering both physical and Web-based remote control options.
+A Japanese train station departure bell and announcement system hardware replica with a responsive web-based control interface. Designed to run on ESP32 microcontrollers and to be installed into authentic housing (KASUGA BSW215B3), JR-Beru brings the nostalgic sounds of Japanese train stations to your home with both physical and web-based remote control options.
 
-<img src="https://github.com/user-attachments/assets/53154c43-97f1-4790-b953-0847c9b9c01a" alt="Demo Img" style="width:85%; height:auto; ">
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/53154c43-97f1-4790-b953-0847c9b9c01a" alt="JR-Beru Device" width="85%">
+</p>
+
+## Table of Contents
+- [Live Demo](#live-demo-un-mute-to-listen)
+- [Features](#features)
+- [Hardware Requirements](#hardware-requirements)
+- [Pin Configuration/Wiring](#pin-configurationwiring)
+- [Audio File Structure](#audio-file-structure)
+- [Setup Instructions](#setup-instructions)
+- [Configuration Files](#configuration-files)
+- [Hardware Installation](#hardware-installation)
+- [Web Interface Access](#web-interface-access)
+- [Station Config Web Editor](#station-config-web-editor)
+- [Uploading Station Config via Web UI](#uploading-station-config-via-web-ui)
+- [Firmware Updates](#firmware-updates)
+- [Version History](#version-history)
+- [Serial Monitoring](#serial-monitoring)
+- [Serial Shell](#serial-shell)
+- [Station Config JSON File Structure](#station-config-json-file-structure)
+- [Credits](#credits)
+- [License](#license)
+- [Support](#support)
 
 ---
 
 ## Live Demo (Un-mute to listen)
-https://github.com/user-attachments/assets/cd463d8b-be39-4bcc-a3f9-045f05dc00bd
-
+<p align="center">
+  <a href="https://github.com/user-attachments/assets/cd463d8b-be39-4bcc-a3f9-045f05dc00bd">
+    <img src="https://img.shields.io/badge/Watch-Demo%20Video-red?style=for-the-badge" alt="Watch Demo Video">
+  </a>
+</p>
 
 ---
 
@@ -17,90 +45,94 @@ https://github.com/user-attachments/assets/cd463d8b-be39-4bcc-a3f9-045f05dc00bd
 ### 🚂 Audio Playback
 
 - **Departure Melodies**: JR station departure melodies
-- **ATOS Announcements**: Yamanote Line ATOS announcements.(Current file system only contains ATOS for the Yamanote Line)
-- **Door Chimes**: Door opening and closing sounds.
-- **Platform Announcements**: JR station platform announcements.(Current file system only contains announcements for the Yamanote Line)
-- New audio files can be added to the SD Card. device will re-index on reboot.
+- **ATOS Announcements**: Yamanote Line ATOS announcements (current file system contains ATOS for the Yamanote Line)
+- **Door Chimes**: Door opening and closing sounds
+- **Platform Announcements**: JR station platform announcements (current file system contains announcements for the Yamanote Line)
+- New audio files can be added to the SD Card; device will re-index on reboot
 
 ### 🎧 Control Methods
 
 - **Physical Button Control**:
-  - Single press: Start melody loop(will random play by default, random play can be toggled in the web interface).
-  - Release: Play ATOS announcement followed by door chime.
+  - Single press: Start melody loop (random play by default, can be toggled in the web interface)
+  - Release: Play ATOS announcement followed by door chime
 - **Web Interface Control**:
-  - Custom station config file upload (with validation).
-  - Dynamic station sign display with preconfigured audio selections.
-  - Station name, line code, direction indicator dynamically updated from the config file.
-  - Audio selection for all sound types, manual selection/auto populate from the config file.
-  - Volume control (range: 0-30).
-  - Play mode selection (selected, random, sequence).
-  - Manual platform announcement trigger.
+  - Custom station config file upload (with validation)
+  - Dynamic station sign display with preconfigured audio selections
+  - Station name, line code, direction indicator dynamically updated from the config file
+  - Audio selection for all sound types, manual selection/auto-populate from the config file
+  - Volume control (range: 0-30)
+  - Play mode selection (selected, random, sequence)
+  - Manual platform announcement trigger
 
 ### 📱 Web Interface
 
 - **Responsive Design**: 
-  - Fully functional on both desktop and mobile devices.
+  - Fully functional on both desktop and mobile devices
 
 - **Station Config Upload**:
-  - Custom station config file upload with size limit (max 100KB).
-  - Error handling/validation/recovery for invalid config files.
-  - JSON structure validation including checks for required fields.
-  - Station info dynamically updated from the config file.
-  - Audio selection for all sound types configured in the config file.  
+  - Custom station config file upload with size limit (max 100KB)
+  - Error handling/validation/recovery for invalid config files
+  - JSON structure validation including checks for required fields
+  - Station info dynamically updated from the config file
+  - Audio selection for all sound types configured in the config file  
 
 - **Station Sign Display**:
-  - JR station sign display with dynamic station name, line code, direction indicator.
-  - Station name, line code, direction indicator dynamically updated from the config file.
-  - Multilingual station names (Japanese, Korean, English).
-  - Line Marker displaying (e.g., JY03)(Created with only html/css code, no online resources required).
+  - JR station sign display with dynamic station name, line code, direction indicator
+  - Station name, line code, direction indicator dynamically updated from the config file
+  - Multilingual station names (Japanese, Korean, English)
+  - Line Marker displaying (e.g., JY03) created with HTML/CSS code, no online resources required
 
 - **Station Config Editor**:
-  - Web-based editor for creating and modifying station configuration files.
-  - Visual preview of station signs based on your configuration.
-  - Export optimized JSON files for use with JR-Beru.
+  - Web-based editor for creating and modifying station configuration files
+  - Visual preview of station signs based on your configuration
+  - Export optimized JSON files for use with JR-Beru
 
-- **Real-time Controls**: Instant feedback and response to user inputs.
+- **Real-time Controls**: Instant feedback and response to user inputs
 
 - **Enhanced Error Handling**:
-  - Consistent modal dialogs for all errors and notifications.
-  - Clear visual feedback for success/error states with color-coding.
-  - Improved display of backend JSON parsing errors.
+  - Consistent modal dialogs for all errors and notifications
+  - Clear visual feedback for success/error states with color-coding
+  - Improved display of backend JSON parsing errors
 
-<img src="https://github.com/user-attachments/assets/762f0230-c717-4456-a0a9-21966e94b34c" alt="WEB-UI" style="width:100%; height:auto; ">
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/762f0230-c717-4456-a0a9-21966e94b34c" alt="Web Interface" width="100%">
+</p>
 
 ### 🔧 System Features
 
-- **WiFi Manager**: Simplified WiFi configuration with AP mode fallback.
-- **OTA Updates**: Seamless over-the-air firmware updates.
-- **Persist Memory**: Retains settings between power cycles.
-- **Dual-core operation**: Audio playback and web interface run on different cores for improved reliability.
-- **Memory optimization**: Efficient handling of large JSON configuration files.
-- **Serial Output**: Detailed status logs for monitoring and debugging.
-- **Serial Shell**: Interactive command-line interface for device control and diagnostics.
-- **Improved Stability**: Enhanced stack sizes for critical tasks to prevent overflow errors.
+- **WiFi Manager**: Simplified WiFi configuration with AP mode fallback
+- **OTA Updates**: Seamless over-the-air firmware updates
+- **Persist Memory**: Retains settings between power cycles
+- **Dual-core operation**: Audio playback and web interface run on different cores for improved reliability
+- **Memory optimization**: Efficient handling of large JSON configuration files
+- **Serial Output**: Detailed status logs for monitoring and debugging
+- **Serial Shell**: Interactive command-line interface for device control and diagnostics
+- **Improved Stability**: Enhanced stack sizes for critical tasks to prevent overflow errors
 
 ---
 
 ## Hardware Requirements
 
-- **ESP32 Board**: Compatible with ESP32 dev board.
-- **DFPlayer Mini MP3 Player**
-- **SD Card**: Formatted as FAT32 with audio files.
-- **Speaker**: Suitable for MP3 playback.
-- **Push Button**: [KASUGA BSW215B3.](https://www.amazon.co.jp/-/en/Electric-BSW215B3AB-Switcher-Rainproof-BSW/dp/B07KQ5P8YG)
-- **Power Supply**: 5V regulated power source.
+- **ESP32 Board**: Compatible with ESP32 dev board
+- **DFPlayer Mini MP3 Player**: For audio playback
+- **SD Card**: Formatted as FAT32 with audio files
+- **Speaker**: Suitable for MP3 playback
+- **Push Button**: [KASUGA BSW215B3](https://www.amazon.co.jp/-/en/Electric-BSW215B3AB-Switcher-Rainproof-BSW/dp/B07KQ5P8YG)
+- **Power Supply**: 5V regulated power source
 
 ---
 
 ## Pin Configuration/Wiring
 
 | Pin    | Function          |
-| ---    | ----------------- |
+| ------ | ----------------- |
 | GPIO16 | DFPlayer RX       |
 | GPIO17 | DFPlayer TX       |
 | GPIO4  | Main Button Input |
 
-<img src="https://github.com/user-attachments/assets/e2ea4942-b499-4de9-a3f0-4eed299d5568" alt="Wiring" style="width:40%; height:auto; ">
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/e2ea4942-b499-4de9-a3f0-4eed299d5568" alt="Wiring Diagram" width="40%">
+</p>
 
 ---
 
@@ -114,20 +146,21 @@ The SD card file system must follow this structure:
 /03/  # Door chime sounds
 /04/  # Platform announcements
 ```
- - SD File system can be downloaded here: https://github.com/99buntai/JR-BERU-ESP/releases/download/R0.4.16-R3.2.8/SD-files-250405.zip
+
+📦 **Download**: [SD File System](https://github.com/99buntai/JR-BERU-ESP/releases/download/R0.4.16-R3.2.8/SD-files-250405.zip)
 
 ---
 
 ## Setup Instructions
 
-1. Format the SD card as FAT32.
-2. Copy audio files to the appropriate folders.
-3. Connect hardware according to the [Pin Configuration](#pin-configuration).
-4. Flash firmware to the ESP32 using the Arduino IDE.
-5. Power on the device.
-6. Connect to the "JR-BERU-AP" WiFi network.
-7. Configure your WiFi settings via the web interface.
-8. Access the web interface at the device's assigned IP address.
+1. Format the SD card as FAT32
+2. Copy audio files to the appropriate folders
+3. Connect hardware according to the [Pin Configuration](#pin-configurationwiring)
+4. Flash firmware to the ESP32 using the Arduino IDE
+5. Power on the device
+6. Connect to the "JR-BERU-AP" WiFi network
+7. Configure your WiFi settings via the web interface
+8. Access the web interface at the device's assigned IP address
 
 ---
 
@@ -137,7 +170,7 @@ The SD card file system must follow this structure:
 
 The station configuration file is a JSON file that defines lines, stations, and tracks for the system. The structure includes:
 
-- **lines**: Available JRlines (JY, JR, etc.)
+- **lines**: Available JR lines (JY, JR, etc.)
   - **style**: Visual styling for the station sign elements (colors)
   - **stations**: List of stations on the selected line
     - **stationInfo**: Details about the station (names, codes)
@@ -150,16 +183,25 @@ You can use the included station config editor to create or modify configuration
 
 ---
 
-## Hardware installation 
+## Hardware Installation 
 
-- Housing installation (Cut away all the original contactor and glue in a momentary switch.)
-<img width="347" alt="Screenshot 2024-12-25 at 16 15 23" src="https://github.com/user-attachments/assets/b7926b30-5ec6-492a-8f21-e18ed6cb1226" />
+### Housing Installation
+Cut away all the original contactor and glue in a momentary switch.
+<p align="center">
+  <img width="347" alt="Housing Installation" src="https://github.com/user-attachments/assets/b7926b30-5ec6-492a-8f21-e18ed6cb1226">
+</p>
 
-- Make a Type C port to ESP32 board.
-<img width="218" alt="Screenshot 2024-12-25 at 16 15 10" src="https://github.com/user-attachments/assets/42d0ba40-b03e-414c-a4b5-ffe235fed302" />
+### USB-C Port Connection
+Create a USB-C port connection to the ESP32 board.
+<p align="center">
+  <img width="218" alt="USB-C Connection" src="https://github.com/user-attachments/assets/42d0ba40-b03e-414c-a4b5-ffe235fed302">
+</p>
 
-- Final installation 
-<img width="349" alt="Screenshot 2024-12-25 at 16 14 58" src="https://github.com/user-attachments/assets/9a75d714-3629-457a-b01a-fbb4c9df8dc0" />
+### Final Assembly
+Completed installation in the housing.
+<p align="center">
+  <img width="349" alt="Final Installation" src="https://github.com/user-attachments/assets/9a75d714-3629-457a-b01a-fbb4c9df8dc0">
+</p>
 
 ---
 
@@ -167,13 +209,15 @@ You can use the included station config editor to create or modify configuration
 
 - **URL**: `http://[device-ip]`
 
-<img src="https://github.com/user-attachments/assets/fd04da57-b5ee-4061-a439-a20b33faee46" alt="WEB-UI" style="width:20%; height:auto; ">
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/fd04da57-b5ee-4061-a439-a20b33faee46" alt="Web Interface Access" width="20%">
+</p>
 
 ---
 
 ## Station Config Web Editor
 
-The Station Config Web Editor is a useful tool that allows you to create and customize JR BERU configurations without manually editing JSON files. This editor features a user-friendly interface for configuring all aspects of your virtual train station.
+The Station Config Web Editor is a powerful tool that allows you to create and customize JR BERU configurations without manually editing JSON files. This editor features a user-friendly interface for configuring all aspects of your virtual train station.
 
 ### Accessing the Editor
 
@@ -203,13 +247,15 @@ The Station Config Web Editor is a useful tool that allows you to create and cus
 
 ### Tips for Effective Configuration
 
-- Use accurate station codes and numbers based on the real JR system, id you leave station code blank, the station will not be displayed.
+- Use accurate station codes and numbers based on the real JR system. If you leave the station code blank, the station will not be displayed
 - Match color schemes to authentic JR line colors for a realistic experience
 - Configure all language fields for proper multilingual support
 - Test your configuration thoroughly before final upload
 - Keep backup copies of your station configurations
 
-<img src="https://github.com/user-attachments/assets/3108e517-734d-4235-b228-a7ea219650a7" alt="Station Editor" style="width:50%; height:auto; ">
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/3108e517-734d-4235-b228-a7ea219650a7" alt="Station Config Editor" width="50%">
+</p>
 
 ---
 
@@ -250,18 +296,18 @@ After a successful upload:
 
 ## Firmware Updates
 
-1. Access `http://[device-ip]/update`.
+1. Access `http://[device-ip]/update`
 2. Enter credentials when prompted:
    - **Default OTA Username**: `JR`
    - **Default OTA Password**: `BERU`
-3. Select the new firmware file.
-4. Click upload to update.
+3. Select the new firmware file
+4. Click upload to update
 
 ---
 
 ## Version History
 
-### **ESP32-MCU-R0.4.16 WebUI-R3.2.8**
+### ESP32-MCU-R0.4.16 WebUI-R3.2.8
 
 - Enhanced error handling with consistent modal dialogs for all errors
 - Optimized JavaScript code for better performance and reduced size
@@ -270,14 +316,14 @@ After a successful upload:
 - Added better code organization with descriptive comments
 - Fixed JSON error parsing and display from backend responses
 
-### **ESP32-MCU-R0.4.15 WebUI-R3.2.7**
+### ESP32-MCU-R0.4.15 WebUI-R3.2.7
 
 - Improved error handling and user feedback
 - Enhanced stability for button handling
 - Fixed minor UI issues
 - Updated confirm dialogs to use the modal system
 
-### **ESP32-MCU-R0.4.9 WebUI-R3.2.5**
+### ESP32-MCU-R0.4.9 WebUI-R3.2.5
 
 - Migrated to ESP32 platform for improved performance and reliability
 - Added station configuration editor
@@ -286,18 +332,18 @@ After a successful upload:
 - Enhanced memory management for large configuration files
 - Improved station sign display
 
-### **MCU-R0.3.7 WebUI-R2.0.5**
+### MCU-R0.3.7 WebUI-R2.0.5
 
-- More accurate station sign display.
-- Improved audio control reliability.
-- Added Reset DF-Player support in WebUI.
+- More accurate station sign display
+- Improved audio control reliability
+- Added Reset DF-Player support in WebUI
 
-### **MCU-R0.3.5 WebUI-R2.0.2**
+### MCU-R0.3.5 WebUI-R2.0.2
 
-- Enhanced station sign display.
-- Improved audio control reliability.
-- Added multilingual support.
-- WiFi connection stability improvements.
+- Enhanced station sign display
+- Improved audio control reliability
+- Added multilingual support
+- WiFi connection stability improvements
 
 ---
 
@@ -372,7 +418,6 @@ Welcome to JR-Beru Shell. Type 'help' for available commands.
 Firmware Version: ESP32-MCU-Rx.x.x WebUI-Rx.x.x
 
 JR-Beru:_$ 
-
 ```
 
 ### Audio Playback Status
@@ -390,27 +435,29 @@ JR-Beru:_$
 
 ### Error Messages
 
-- `Time Out!`: MP3 player communication timeout.
-- `Stack Wrong!`: MP3 player stack error.
-- `Card not found`: SD card reading error.
-- `Cannot Find File`: Requested audio file not found.
-- `File Index Out of Bound`: Invalid file number requested.
-- `File too large, max size is 100KB`: Attempted upload exceeds size limit.
-- `Invalid JSON format (unbalanced braces)`: Configuration file error.
+- `Time Out!`: MP3 player communication timeout
+- `Stack Wrong!`: MP3 player stack error
+- `Card not found`: SD card reading error
+- `Cannot Find File`: Requested audio file not found
+- `File Index Out of Bound`: Invalid file number requested
+- `File too large, max size is 100KB`: Attempted upload exceeds size limit
+- `Invalid JSON format (unbalanced braces)`: Configuration file error
 
 ### WiFi Status
 
-- Connection status.
-- IP address assignment.
-- Web server initialization.
+- Connection status
+- IP address assignment
+- Web server initialization
 
 ### Debugging Tips
 
-1. Open Serial Monitor in Arduino IDE.
-2. Set baud rate to 115200.
-3. Ensure "Newline" is selected for line ending.
-4. Power cycle the device to see boot sequence.
-5. Monitor real-time operation status.
+1. Open Serial Monitor in Arduino IDE
+2. Set baud rate to 115200
+3. Ensure "Newline" is selected for line ending
+4. Power cycle the device to see boot sequence
+5. Monitor real-time operation status
+
+---
 
 ## Serial Shell
 
@@ -427,8 +474,8 @@ The device includes an interactive command-line interface accessible through the
 | `play atos` | Play current ATOS announcement |
 | `play chime` | Play current door chime |
 | `play va` | Play current platform announcement |
-| `ls`  `/` | List files on SPIFFS |
-| `ls stations`| List available stations with their tracks |
+| `ls /` | List files on SPIFFS |
+| `ls stations` | List available stations with their tracks |
 | `station [line] [station] [track]` | Set current station (e.g., `station JY Tokyo 4`) |
 | `reset player` | Reset the DFPlayer Mini |
 | `reset wifi` | Reset WiFi settings |
@@ -471,22 +518,25 @@ IP Address: 192.168.1.2
 JR-Beru_: 
 ```
 
+---
+
 ## Station Config JSON File Structure
 
-- Structure Details:
-  - lines: Available JR lines (JY, JK, etc.)
-  - style: Visual styling for the station sign elements (colors)
-  - lineMarkerBgColor: Background color for the line marker
-  - lineNumberBgColor: Background color for the station number display
-  - directionBarBgColor: Background color for the direction indicator bars
-  - stations: List of stations on the selected line
-    - i: Station information array: [stationCode, nameJa, nameHiragana, nameEn, wardBox]
+### Structure Details
+
+- **lines**: Available JR lines (JY, JK, etc.)
+  - **style**: Visual styling for the station sign elements
+    - **lineMarkerBgColor**: Background color for the line marker
+    - **lineNumberBgColor**: Background color for the station number display
+    - **directionBarBgColor**: Background color for the direction indicator bars
+  - **stations**: List of stations on the selected line
+    - **i**: Station information array: [stationCode, nameJa, nameHiragana, nameEn, wardBox]
       - Element 0: Station code (e.g., "AKB")
       - Element 1: Japanese station name (e.g., "秋葉原")
       - Element 2: Hiragana reading (e.g., "あきはばら")
       - Element 3: English station name (e.g., "Akihabara")
       - Element 4: Ward designation (e.g., "山")
-    - t: Array of track configurations, each containing:
+    - **t**: Array of track configurations, each containing:
       - Element 0: Track name (e.g., "Track1")
       - Element 1: Line code (e.g., "JY")
       - Element 2: Station number (e.g., "03")
@@ -494,8 +544,9 @@ JR-Beru_:
       - Element 4: Previous station info [nameJa, nameEn]
       - Element 5: Next station info [nameJa, nameEn]
 
-- Example JSON file:
-``` 
+### Example JSON Configuration
+
+```json
 {
   "lines": {
     "JY": {
@@ -528,25 +579,23 @@ JR-Beru_:
 
 ## Credits
 
-- Station melodies and announcements are the property of JR East.
-- Web interface design inspired by JR Yamanote Line station signage.
-- Built using the ESP32 Arduino Core and DFRobotDFPlayerMini library.
+- Station melodies and announcements are the property of JR East
+- Web interface design inspired by JR Yamanote Line station signage
+- Built using the ESP32 Arduino Core and DFRobotDFPlayerMini library
 
 ---
 
 ## License
 
-This project is released under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+This project is released under the [Creative Commons Attribution-NonCommercial 4.0 International License](https://creativecommons.org/licenses/by-nc/4.0/) (CC BY-NC 4.0).
 
 This means you are free to:
-- Share — copy and redistribute the material in any medium or format
-- Adapt — remix, transform, and build upon the material
+- **Share** — copy and redistribute the material in any medium or format
+- **Adapt** — remix, transform, and build upon the material
 
 Under the following terms:
-- Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
-- NonCommercial — You may not use the material for commercial purposes.
-
-For more details: [Creative Commons BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)
+- **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made
+- **NonCommercial** — You may not use the material for commercial purposes
 
 ---
 
