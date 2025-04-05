@@ -209,7 +209,7 @@ The Station Config Web Editor is a useful tool that allows you to create and cus
 - Test your configuration thoroughly before final upload
 - Keep backup copies of your station configurations
 
-<img src="https://github.com/user-attachments/assets/3108e517-734d-4235-b228-a7ea219650a7" alt="Station Editor" style="width:100%; height:auto; ">
+<img src="https://github.com/user-attachments/assets/3108e517-734d-4235-b228-a7ea219650a7" alt="Station Editor" style="width:50%; height:auto; ">
 
 ---
 
