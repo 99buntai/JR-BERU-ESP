@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-CC%20BY--NC%204.0-lightgrey)](https://creativecommons.org/licenses/by-nc/4.0/)
 
 
-A Japanese train station departure bell and announcement system hardware replica with a responsive web-based control interface. Designed to run on ESP32 microcontrollers and to be installed into authentic housing (KASUGA BSW215B3), JR-Beru brings the nostalgic sounds of Japanese train stations to your home with both physical and web-based remote control options.
+A Japanese train station departure bell and announcement system hardware replica with a responsive web-based control interface. Designed to run on ESP32 microcontrollers and to be installed into authentic housing (KASUGA BSW215B3), JR-Beru brings the nostalgic sounds of Japanese train stations to your home with both physical and web-based remote control options. the device self host the web interface therefore no internet connection/app is required. entire system is self contained and does not require any cloud services.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/53154c43-97f1-4790-b953-0847c9b9c01a" alt="JR-Beru Device" width="85%">
