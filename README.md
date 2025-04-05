@@ -225,6 +225,10 @@ The Station Config Web Editor is a powerful tool that allows you to create and c
 1. Open `station_config_editor.html` in your web browser
 2. The editor works on both desktop and mobile devices
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/1f7284bb-2db6-4e37-bbb1-f3648879999c" alt="Station Config Editor" width="90%">
+</p>
+
 ### Key Features
 
 - **Visual Station Sign Preview**: See real-time updates as you modify your station configuration
@@ -236,6 +240,7 @@ The Station Config Web Editor is a powerful tool that allows you to create and c
 - **Audio Mapping**: Easily assign audio files to each station configuration
 - **JSON Validation**: Automatic validation ensures your configuration will work with JR-Beru
 - **Export/Import**: Save your configurations as JSON files for backup or sharing
+- **Auto-Fill Config**: The editor will auto-fill the station config with the previous station information for faster configuration
 
 ### How to Use
 
@@ -249,14 +254,12 @@ The Station Config Web Editor is a powerful tool that allows you to create and c
 ### Tips for Effective Configuration
 
 - Use accurate station codes and numbers based on the real JR system. If you leave the station code blank, the station will not be displayed
-- Match color schemes to authentic JR line colors for a realistic experience
+- Match color schemes to the actual JR line colors for a realistic experience
 - Configure all language fields for proper multilingual support
 - Test your configuration thoroughly before final upload
 - Keep backup copies of your station configurations
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/1f7284bb-2db6-4e37-bbb1-f3648879999c" alt="Station Config Editor" width="90%">
-</p>
+
 
 
 ---
