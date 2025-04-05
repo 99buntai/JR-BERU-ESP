@@ -770,8 +770,9 @@ void handleRoot() {
           "        setEl($(id), 'value', trackData[3]?.[i] || 1));"
           // Update Station Info
           "      const stInfo = stationData.i || [];"
-          "      ['.staName-ja','.staName-hiragana','.staName-ko','.ward-box','.markerStationCode']"
+          "      ['.staName-ja','.staName-hiragana','.staName-ko','.ward-box']"
           "        .forEach((sel, i) => setEl(sel, 'textContent', stInfo[i+1] || ''));"
+          "      setEl('.markerStationCode', 'textContent', stInfo[0] || '');"
           
           "      setEl('.markerLineCode', 'textContent', trackData[1]);"
           "      setEl('.line-number', 'textContent', trackData[2]);"

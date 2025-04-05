@@ -166,9 +166,85 @@ You can use the included station config editor to create or modify configuration
 ## Web Interface Access
 
 - **URL**: `http://[device-ip]`
-- **Station Editor**: `/station_config_editor.html`
 
 <img src="https://github.com/user-attachments/assets/fd04da57-b5ee-4061-a439-a20b33faee46" alt="WEB-UI" style="width:20%; height:auto; ">
+
+---
+
+## Station Config Web Editor
+
+The Station Config Web Editor is a useful tool that allows you to create and customize JR BERU configurations without manually editing JSON files. This editor features a user-friendly interface for configuring all aspects of your virtual train station.
+
+### Accessing the Editor
+
+1. Open `station_config_editor.html` in your web browser
+2. The editor works on both desktop and mobile devices
+
+### Key Features
+
+- **Visual Station Sign Preview**: See real-time updates as you modify your station configuration
+- **Line Configuration**: Create and customize multiple JR lines with appropriate styling
+- **Station Management**: Add, modify and remove stations with full multilingual support
+- **Track Configuration**: Set up multiple tracks with custom audio mappings
+- **Direction Settings**: Configure previous and next station information for accurate announcements
+- **Color Customization**: Adjust colors for line markers, station numbers, and direction indicators
+- **Audio Mapping**: Easily assign audio files to each station configuration
+- **JSON Validation**: Automatic validation ensures your configuration will work with JR-Beru
+- **Export/Import**: Save your configurations as JSON files for backup or sharing
+
+### How to Use
+
+1. **Create a Line**: Start by creating a JR line (like JY for Yamanote) and set its styling
+2. **Add Stations**: Create stations with Japanese, English, Korean and Hiragana names
+3. **Configure Tracks**: Set up track numbers, line codes, and audio mappings
+4. **Set Directions**: Define previous and next stations for directional announcements
+5. **Preview**: Use the visual preview to check your station sign appearance
+6. **Export**: Download your configuration as a JSON file so you can upload it in JR-Beru web interface
+
+### Tips for Effective Configuration
+
+- Use accurate station codes and numbers based on the real JR system, id you leave station code blank, the station will not be displayed.
+- Match color schemes to authentic JR line colors for a realistic experience
+- Configure all language fields for proper multilingual support
+- Test your configuration thoroughly before final upload
+- Keep backup copies of your station configurations
+
+<img src="https://github.com/user-attachments/assets/762f0230-c717-4456-a0a9-21966e94b34c" alt="Station Editor" style="width:100%; height:auto; ">
+
+---
+
+## Uploading Station Config via Web UI
+
+The JR-Beru web interface allows you to easily upload and apply custom station configuration files created with the Station Config Web Editor.
+
+### Upload Process
+
+1. **Access the Web Interface**: Navigate to `http://[device-ip]` in your browser
+2. **Locate the Upload Section**: Find the "Upload" button in the sequence control section
+3. **Select File**: Click "Choose File" and select your JSON configuration file
+4. **Upload**: Click the "Upload" button to send the file to your JR-Beru device
+
+### Validation and Processing
+
+- The system automatically validates your configuration file before applying it
+- Files are limited to 100KB maximum size
+- JSON structure is checked for required fields and proper formatting
+- If validation fails, you'll receive a specific error message explaining the issue
+
+### After Upload
+
+After a successful upload:
+- The station sign will immediately update to show your new configuration
+- Audio selections will be updated based on the configuration
+- The device will save your new configuration and keep it across reboots
+- You can immediately use the new configuration with the physical button or web controls
+
+### Troubleshooting Upload Issues
+
+- **File Size Error**: If you see "File too large", reduce the number of lines in your configuration
+- **JSON Format Error**: Check your file for syntax errors (missing brackets, commas, etc.)
+- **Missing Fields**: Ensure all required fields are present in your configuration
+- **Audio File Issues**: If audio doesn't play, check that the file indices in your config match the available files on the SD card
 
 ---
 
