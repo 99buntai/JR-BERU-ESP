@@ -130,7 +130,7 @@ https://github.com/user-attachments/assets/a7837b30-74a7-4988-9690-bed131612baa
 | GPIO4  | Main Button Input |
 
 <p align="left">
-  <img src="https://github.com/user-attachments/assets/b787667a-7ce2-4cbd-90f3-d3548ace1503" alt="Wiring Diagram" width="40%">
+  <img src="https://github.com/user-attachments/assets/b787667a-7ce2-4cbd-90f3-d3548ace1503" alt="Wiring Diagram" width="50%">
 </p>
 
 
@@ -210,8 +210,9 @@ Completed installation in the housing.
 - **URL**: `http://[device-ip]`
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/fd04da57-b5ee-4061-a439-a20b33faee46" alt="Web Interface Access" width="30%">
+  <img src="https://github.com/user-attachments/assets/62412374-7cfd-4ccd-9995-1aa3182bb13a" alt="Web Interface Access" width="30%">
 </p>
+
 
 ---
 
@@ -254,8 +255,9 @@ The Station Config Web Editor is a powerful tool that allows you to create and c
 - Keep backup copies of your station configurations
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/3108e517-734d-4235-b228-a7ea219650a7" alt="Station Config Editor" width="50%">
+  <img src="https://github.com/user-attachments/assets/1f7284bb-2db6-4e37-bbb1-f3648879999c" alt="Station Config Editor" width="50%">
 </p>
+
 
 ---
 
