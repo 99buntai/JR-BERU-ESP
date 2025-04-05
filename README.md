@@ -255,7 +255,7 @@ The Station Config Web Editor is a powerful tool that allows you to create and c
 - Keep backup copies of your station configurations
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/1f7284bb-2db6-4e37-bbb1-f3648879999c" alt="Station Config Editor" width="50%">
+  <img src="https://github.com/user-attachments/assets/1f7284bb-2db6-4e37-bbb1-f3648879999c" alt="Station Config Editor" width="70%">
 </p>
 
 
