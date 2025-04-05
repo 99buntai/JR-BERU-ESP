@@ -23,7 +23,7 @@ void printDetail(uint8_t type, int value);
 //================================
 // Global Configuration Constants
 //================================
-#define FW_VERSION      "ESP32-MCU-R0.4.15 WebUI-R3.2.7"  // Current firmware version
+#define FW_VERSION      "ESP32-MCU-R0.4.16 WebUI-R3.2.8"  // Current firmware version
 
 // Audio folder mappings on SD card
 int MelodyFolder = 1;    // /01/ - Contains departure melodies
@@ -251,21 +251,12 @@ void setup() {
   
   // Now load device state which will use the station config
   loadDeviceState();
-  
-  // Debug output after loading
-  Serial.println(F("After loading device state:"));
-  Serial.printf("Current values - Line: '%s', Station: '%s', Track: '%s'\n", 
-               currentStation.stationCodeLine.c_str(), 
-               currentStation.stationNameEn.c_str(), 
-               currentStation.trackKey.c_str());
-
-
 
   // Create button handler task on Core 1
   xTaskCreatePinnedToCore(
     buttonHandlerTask,
     "buttonHandler",
-    4096,  // Stack size
+    8192,  // Stack size
     NULL,
     22,     // Priority
     NULL,
@@ -422,7 +413,7 @@ void handleRoot() {
                 ".staName-ko {font-size:14px;color:#666;margin-bottom:6px}"
                 
                 // Ward label
-                ".ward-label {position:absolute;top:15px;right:30px;display:flex;gap:1px}"
+                ".ward-label {position:absolute;top:15px;right:37px;display:flex;gap:1px}"
                 ".ward-box,.ward-text {width:16px;height:16px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:12px}"
                 ".ward-box {background:#fff;color:#000;border:1px solid #000}"
                 ".ward-text {background:#000;color:#fff}"
@@ -586,14 +577,15 @@ void handleRoot() {
           populateOptions("04PlatformAnnouncement", VACount, currentVA) + 
           "</select></div></div>";
 
-  // Playback Controls Panel
+  // System Controls Panel
   html += "<div class='panel'>"
-          "<div class='panel-header'>Playback Controls</div>"
+          "<div class='panel-header'>System Controls</div>"
           "<div class='controls-grid'>"
           
-          // Reinit DFPlayer Button
-          "<div class='control-item right'>"
+          // Buttons in one row
+          "<div class='control-item right' style='display:flex;gap:10px;'>"
           "<button class='btn btn-warning' onclick='reinitDFPlayer()'>Reinit DFPlayer</button>"
+          "<button class='btn btn-primary' onclick='showSystemInfo()'>System Info</button>"
           "</div>"
           
           // Volume Control
@@ -614,232 +606,224 @@ void handleRoot() {
           String("発車ベル") + // 発車ベル
           "</div>";
 
+  // Reusable modal
+  html += "<div id='appModal' class='modal' style='display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,0.4);'>"
+          "<div class='modal-content' style='background-color:#fff;margin:10% auto;padding:20px;border-radius:10px;width:80%;max-width:600px;box-shadow:0 4px 8px rgba(0,0,0,0.2);'>"
+          "<span class='close-button' style='color:#aaa;float:right;font-size:28px;font-weight:bold;cursor:pointer;' onclick='closeModal()'>&times;</span>"
+          "<h2 id='modalTitle' style='margin-top:0;color:#2c3e50;'></h2>"
+          "<div id='modalContent' style='max-height:400px;overflow-y:auto;'></div>"
+          "</div>"
+          "</div>";
+
   // JavaScript
   html += "<script>"
           // Core utilities and DOM helpers
-          "const api = (url, method = 'GET') => fetch(url, {method});"
-          "const $ = id => document.getElementById(id);"
-          "const $q = (sel, parent) => (parent || document).querySelector(sel);"
-          "const $all = (sel, parent) => (parent || document).querySelectorAll(sel);"
-          "const setTextContent = (sel, val) => { const el = $q(sel); if(el) el.textContent = val || ''; };"
+          "const $ = id => document.getElementById(id), $q = (sel, p) => (p || document).querySelector(sel), $all = (sel, p) => (p || document).querySelectorAll(sel);"
+          "const setEl = (sel, prop, val) => { const el = typeof sel === 'string' ? $q(sel) : sel; if(el) el[prop] = val || ''; };"
           "const setStyle = (sel, prop, val) => { const el = $q(sel); if(el) el.style[prop] = val; };"
-          "const setSelectValue = (id, val) => { const el = $(id); if(el && val) el.value = val; };"
-          "const populateOptions = (items, selected) => {"
-          "  if (!items) return '';"
-          "  return Object.keys(items).map(item => `<option value=\"${item}\" ${item === selected ? 'selected' : ''}>${item}</option>`).join('');"
+          
+          // Modal functions
+          "const showModal = (title, content) => {"
+          "  document.getElementById('modalTitle').textContent = title;"
+          "  document.getElementById('modalContent').innerHTML = content;"
+          "  document.getElementById('appModal').style.display = 'block';"
+          "};"
+
+          // Close Modal
+          "const closeModal = () => {"
+          "  document.getElementById('appModal').style.display = 'none';"
           "};"
           
-          "let cachedConfig = null;"
-          "let updateInProgress = false;"
-          "let lastStationCounter = 0;"
+          "const msgModal = (type, msg) => showModal(type, `<div style=\"color:${type === 'Error' || type === 'Upload Failed' ? 'red' : 'green'};text-align:center;padding:10px;\">${msg}</div>`);"
           
-          // API interaction functions
-          "const updateConfig = () => {"
-          "  const params = ['melody', 'atos', 'doorchime', 'platform'].map(id => `${id}=${$(id).value}`).join('&');"
-          "  api(`/updateConfig?${params}`);"
-          "};"
+          // Enhanced API with error handling
+          "const api = (url, method = 'GET', errorTitle) => fetch(url, {method})"
+          "  .then(r => (r.ok || !errorTitle) ? r : Promise.reject(`Status: ${r.status}`))"
+          "  .catch(e => { if(errorTitle) { console.error(e); msgModal('Error', `${errorTitle}: ${e}`); } throw e; });"
           
+          // State management
+          "let cachedConfig = null, updateInProgress = false, lastStationCounter = 0;"
+          
+          // Core functions
+          "const updateConfig = () => api(`/updateConfig?${['melody','atos','doorchime','platform'].map(id => `${id}=${$(id).value}`).join('&')}`);"
+          "const reinitDFPlayer = () => { api('/reinitDFPlayer').then(() => showModal('DFPlayer', '<div style=\"text-align:center;padding:10px;\">DFPlayer reinitialization requested</div>')); };"
+          "const setVolume = v => { api(`/setVolume?value=${v}`); $('volumeValue').textContent = v; };"
           "const playVA = () => api(`/playVA?mode=${$('playMode').value}`);"
-          "const setVolume = (v) => { api(`/setVolume?value=${v}`); $('volumeValue').textContent = v; };"
-          "const reinitDFPlayer = () => { api('/reinitDFPlayer').then(() => alert('DFPlayer reinitialization requested')); };"
           "const downloadConfig = () => { location.href = '/downloadConfig'; };"
           
           // Config file management
           "const uploadConfig = () => {"
           "  const file = $('configFile').files[0];"
-          "  if (!file) return;"
-          "  if (file.size > 102400) return alert('File over max size: 100KB');"
+          "  if(!file) return;"
+          "  if(file.size > 102400) return showModal('Error', '<div style=\"color:red;text-align:center;padding:10px;\">File over max size: 100KB</div>');"
           "  const fd = new FormData();"
           "  fd.append('config', file);"
           "  fetch('/upload', {method: 'POST', body: fd})"
-          "    .then(response => response.json())"
-          "    .then(data => {if (data.error) throw new Error(data.error);return forceConfigReload();})"
-          "    .catch(e => { console.error('Error:', e); alert(e.message || 'Upload failed'); });"
+          "    .then(r => r.json())"
+          "    .then(data => {"
+          "      if(data.error) throw new Error(data.error);"
+          "      showModal('Success', '<div style=\"color:green;text-align:center;padding:10px;\">Config file uploaded successfully</div>');"
+          "      return forceConfigReload();"
+          "    })"
+          "    .catch(e => { console.error('Error:', e); showModal('Upload Failed', '<div style=\"color:red;text-align:center;padding:10px;\">' + (e.message || 'Upload failed') + '</div>'); });"
           "};"
-          //delete config
+
+          // Delete Config
           "const deleteConfig = () => {"
-          "  if (!confirm('Delete config file?')) return;"
+          "  if(!confirm('Delete config file?')) return;"
           "  api('/deleteConfig')"
-          "    .then(r => r.ok ? r.text() : Promise.reject('Status: ' + r.status))"
           "    .then(() => forceConfigReload())"
-          "    .then(() => alert('Config deleted successfully'))"
-          "    .catch(e => alert('Failed to delete configuration: ' + e));"
+          "    .then(() => showModal('Success', '<div style=\"color:green;text-align:center;padding:10px;\">Config deleted successfully</div>'))"
+          "    .catch(e => showModal('Error', '<div style=\"color:red;text-align:center;padding:10px;\">Failed to delete configuration: ' + e + '</div>'));"
           "};"
-          //force config reload
+          
           "const forceConfigReload = () => { cachedConfig = null; return loadConfig(); };"
           
-          // Selectors management>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-          //populate selector
+          // Selectors management
+          "const populateOptions = (items, selected) => items ? Object.keys(items).map(item => "
+          "  `<option value=\"${item}\" ${item === selected ? 'selected' : ''}>${item}</option>`).join('') : '';"
+          
           "const populateSelector = (id, items, selected) => {"
-          "  const sel = $(id);"
-          "  if (!sel) return;"
+          "  const sel = $(id); if(!sel) return;"
           "  sel.innerHTML = `<option>${sel.options[0].text}</option>${populateOptions(items, selected)}`;"
           "};"
-          //update station select
+          
+          // Station Select
           "const updateStationSelect = () => {"
           "  const line = $('lineSelect').value;"
           "  const stations = cachedConfig?.lines?.[line]?.stations;"
-          "  $('stationSelect').innerHTML = '<option>Select Station</option>';"
-          "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
-          "  if (line && stations) {"
+          "  ['stationSelect', 'trackSelect'].forEach(id => $(id).innerHTML = `<option>${id === 'stationSelect' ? 'Select Station' : 'Select Track'}</option>`);"
+          "  if(line && stations) {"
           "    populateSelector('stationSelect', stations);"
-          "    if ($('stationSelect').options.length > 1) {"
+          "    if($('stationSelect').options.length > 1) {"
           "      $('stationSelect').selectedIndex = 1;"
           "      updateTrackSelect();"
           "    }"
           "  }"
           "};"
-          //update track select
+          // Track Select
           "const updateTrackSelect = () => {"
-          "  const line = $('lineSelect').value;"
-          "  const station = $('stationSelect').value;"
+          "  const line = $('lineSelect').value, station = $('stationSelect').value;"
           "  const stationData = cachedConfig?.lines?.[line]?.stations?.[station];"
           "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
-          "  if (stationData?.t?.length > 0) {"
+          "  if(stationData?.t?.length > 0) {"
           "    const tracks = {};"
           "    stationData.t.forEach(trackArray => {"
-          "      if (trackArray?.length > 0) {"
-          "        const trackKey = String(trackArray[0]);"
-          "        tracks[trackKey] = trackKey;"
-          "      }"
+          "      if(trackArray?.length > 0) tracks[String(trackArray[0])] = String(trackArray[0]);"
           "    });"
           "    populateSelector('trackSelect', tracks);"
-          "    if ($('trackSelect').options.length > 1) {"
+          "    if($('trackSelect').options.length > 1) {"
           "      $('trackSelect').selectedIndex = 1;"
           "      updateStationSign();"
           "    }"
           "  }"
-          "};"          
-          // Station sign update>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-          //update line marker position
+          "};"
+          
+          // Station sign update
           "const updateLineMarkerPosition = () => {"
-          "  const stationNameJa = $q('.staName-ja');"
-          "  const lineMarker = $q('.line-marker');"
-          "  const stationContent = $q('.station-content');"
+          "  const stationNameJa = $q('.staName-ja'), lineMarker = $q('.line-marker'), stationContent = $q('.station-content');"
+          "  if(!stationNameJa || !lineMarker || !stationContent) return;"
           "  const stationCode = $q('.markerStationCode');"
-          "  if (!stationNameJa || !lineMarker || !stationContent) return;"
-          "  if (stationCode && (!stationCode.textContent || stationCode.textContent.trim() === '')) {"
+          "  if(stationCode && (!stationCode.textContent || stationCode.textContent.trim() === '')) {"
           "    lineMarker.style.backgroundColor = 'transparent';"
           "    lineMarker.style.boxShadow = 'none';"
           "    lineMarker.style.transform = 'translate(-55px, -16px)';"
           "  } else {"
-          "    lineMarker.style.backgroundColor = '';"
-          "    lineMarker.style.boxShadow = '';"
-          "    lineMarker.style.transform = '';"
+          "    lineMarker.style.backgroundColor = lineMarker.style.boxShadow = lineMarker.style.transform = '';"
           "  }"
-          "  const offset = stationNameJa.getBoundingClientRect().left - stationContent.getBoundingClientRect().left;"
-          "  lineMarker.style.left = offset + 'px';"
+          "  lineMarker.style.left = (stationNameJa.getBoundingClientRect().left - stationContent.getBoundingClientRect().left) + 'px';"
           "};"
-          //update station sign
+
+          // Update Station Sign
           "const updateStationSign = () => {"
-          "  if (updateInProgress) return;"
+          "  if(updateInProgress) return;"
           "  updateInProgress = true;"
-          "  const line = $('lineSelect').value;"
-          "  const station = $('stationSelect').value;"
-          "  const track = $('trackSelect').value;"
-          "  if (!line || !station || !track || track === 'Select Track') {"
-          "    updateInProgress = false;"
-          "    return;}"
-          //check if required selectors are present
-          "  const requiredSelectors = ["
-          "    '.line-marker', '.station-number-container', '.station-indicator', '.direction-bar',"
-          "    '.staName-ja', '.staName-hiragana', '.staName-ko', '.ward-box',"
-          "    '.markerStationCode', '.markerLineCode', '.line-number',"
-          "    '.direction-left .direction-station', '.direction-right .direction-station',"
-          "    '.staName-en-left', '.staName-en-center', '.staName-en-right'"
-          "  ];"
-          "  if (!requiredSelectors.every(sel => $q(sel))) {"
+          "  const line = $('lineSelect').value, station = $('stationSelect').value, track = $('trackSelect').value;"
+          "  if(!line || !station || !track || track === 'Select Track') { updateInProgress = false; return; }"
+          
+          "  const selectors = ['.line-marker','.station-number-container','.station-indicator','.direction-bar',"
+          "    '.staName-ja','.staName-hiragana','.staName-ko','.ward-box','.markerStationCode','.markerLineCode','.line-number',"
+          "    '.direction-left .direction-station','.direction-right .direction-station',"
+          "    '.staName-en-left','.staName-en-center','.staName-en-right'];"
+          
+          "  if(!selectors.every(sel => $q(sel))) {"
           "    setTimeout(() => { updateInProgress = false; updateStationSign(); }, 100);"
           "    return;"
           "  }"
+
+          // Update Station Sign
           "  api(`/updateStationSign?line=${line}&station=${station}&track=${track}`)"
-          "    .then(response => response.ok ? response : Promise.reject('Failed to update'))"
           "    .then(() => {"
-          "      if (!cachedConfig) return;"
+          "      if(!cachedConfig) return;"
           "      const stationData = cachedConfig.lines[line].stations[station];"
-          "      if (!stationData) return;"
+          "      if(!stationData) return;"
           "      const style = cachedConfig.lines[line].style;"
-          "      let trackData = null;"
-          "      if (stationData.t && stationData.t.length > 0) {"
-          "        trackData = stationData.t.find(t => t && t.length > 0 && String(t[0]) === String(track));"
-          "      }"
-          "      if (!trackData) return;"
+          "      const trackData = stationData.t?.find(t => t?.length > 0 && String(t[0]) === String(track));"
+          "      if(!trackData) return;"
           
-                // Update styles and colors
-          "      setStyle('.line-marker', 'backgroundColor', style.lineMarkerBgColor);"
-          "      setStyle('.station-number-container', 'backgroundColor', style.lineNumberBgColor);"
-          "      setStyle('.station-indicator', 'backgroundColor', style.lineNumberBgColor);"
-          "      setStyle('.direction-bar', 'backgroundColor', style.directionBarBgColor);"
-          
-                // Update line marker position
+          "      ['.line-marker', '.station-number-container', '.station-indicator', '.direction-bar'].forEach((sel, i) => "
+          "        setStyle(sel, 'backgroundColor', [style.lineMarkerBgColor, style.lineNumberBgColor, style.lineNumberBgColor, style.directionBarBgColor][i]));"
+          // Update Line Marker Position
           "      setTimeout(updateLineMarkerPosition, 10);"
-                // Update audio values
-          "      setSelectValue('melody', trackData[3]?.[0] || 1);"
-          "      setSelectValue('atos', trackData[3]?.[1] || 1);"
-          "      setSelectValue('doorchime', trackData[3]?.[2] || 1);"
-          "      setSelectValue('platform', trackData[3]?.[3] || 1);"
-                // Update station info text
+          // Update Audio Selection 
+          "      ['melody', 'atos', 'doorchime', 'platform'].forEach((id, i) => "
+          "        setEl($(id), 'value', trackData[3]?.[i] || 1));"
+          // Update Station Info
           "      const stInfo = stationData.i || [];"
-          "      setTextContent('.staName-ja', stInfo[1]);"
-          "      setTextContent('.staName-hiragana', stInfo[2]);"
-          "      setTextContent('.staName-ko', stInfo[3]);"
-          "      setTextContent('.ward-box', stInfo[4]);"
-          "      setTextContent('.markerStationCode', stInfo[0]);"
-          "      setTextContent('.markerLineCode', trackData[1]);"
-          "      setTextContent('.line-number', trackData[2]);"
-                // Update direction info
-          "      setTextContent('.direction-left .direction-station', trackData[4]?.[0] || '');"
-          "      setTextContent('.direction-right .direction-station', trackData[5]?.[0] || '');"
-          "      setTextContent('.staName-en-left', trackData[4]?.[1] || '');"
-          "      setTextContent('.staName-en-center', station);"
-          "      setTextContent('.staName-en-right', trackData[5]?.[1] || '');"
+          "      ['.staName-ja','.staName-hiragana','.staName-ko','.ward-box','.markerStationCode']"
+          "        .forEach((sel, i) => setEl(sel, 'textContent', stInfo[i+1] || ''));"
+          
+          "      setEl('.markerLineCode', 'textContent', trackData[1]);"
+          "      setEl('.line-number', 'textContent', trackData[2]);"
+          "      setEl('.direction-left .direction-station', 'textContent', trackData[4]?.[0] || '');"
+          "      setEl('.direction-right .direction-station', 'textContent', trackData[5]?.[0] || '');"
+          "      setEl('.staName-en-left', 'textContent', trackData[4]?.[1] || '');"
+          "      setEl('.staName-en-center', 'textContent', station);"
+          "      setEl('.staName-en-right', 'textContent', trackData[5]?.[1] || '');"
+          
           "      updateConfig();"
           "    })"
-          "    .catch(error => { setTimeout(() => { updateStationSign(); }, 500); })"
+          "    .catch(() => setTimeout(updateStationSign, 500))"
           "    .finally(() => { updateInProgress = false; });"
           "};"
           
           // Data loading
           "const loadConfig = () => {"
           "  cachedConfig = null;"
-          "  $('lineSelect').innerHTML = '<option>Select Line</option>';"
-          "  $('stationSelect').innerHTML = '<option>Select Station</option>';"
-          "  $('trackSelect').innerHTML = '<option>Select Track</option>';"
-          "  Promise.all(["
-          "    api('/getCurrentConfig').then(r => r.json()),"
-          "    api('/getStationConfig').then(r => r.json())"
-          "  ])"
-          "  .then(([configInfo, config]) => {"
-          "    $('configName').textContent = configInfo.filename;"
-          "    cachedConfig = JSON.parse(JSON.stringify(config));"
-          "    $('playMode').value = configInfo.playbackMode;"
-          "    if (configInfo.volume !== undefined) {"
-          "      $('volumeControl').value = configInfo.volume;"
-          "      $('volumeValue').textContent = configInfo.volume;"
-          "    }"
-          "    populateSelector('lineSelect', config.lines, null);"
-          "    return api('/getCurrentSelections').then(r => r.json());"
-          "  })"
-          "  .then(sel => {"
-          "    if (!sel?.line || !sel?.station || !sel?.track || !cachedConfig?.lines?.[sel.line]) return;"
-          "    setSelectValue('lineSelect', sel.line);"
-          "    populateSelector('stationSelect', cachedConfig.lines[sel.line].stations, sel.station);"
-          "    setSelectValue('stationSelect', sel.station);"
-          "    const stationData = cachedConfig.lines[sel.line].stations[sel.station];"
-          "    if (stationData?.t?.length > 0) {"
-          "      const tracks = {};"
-          "      stationData.t.forEach(trackArray => {"
-          "        if (trackArray?.length > 0) {"
-          "          const trackKey = trackArray[0];"
-          "          tracks[trackKey] = trackKey;"
-          "        }"
-          "      });"
-          "      populateSelector('trackSelect', tracks, sel.track);"
-          "      setSelectValue('trackSelect', sel.track);"
-          "      updateStationSign();"
-          "    }"
-          "  })"
-          "  .catch(e => { console.error('Error loading config:', e); cachedConfig = null; });"
+          "  ['lineSelect','stationSelect','trackSelect'].forEach(id => "
+          "    $(id).innerHTML = `<option>${id === 'lineSelect' ? 'Select Line' : id === 'stationSelect' ? 'Select Station' : 'Select Track'}</option>`);"
+          // Load Config
+          "  Promise.all([api('/getCurrentConfig').then(r => r.json()), api('/getStationConfig').then(r => r.json())])"
+          "    .then(([configInfo, config]) => {"
+          "      $('configName').textContent = configInfo.filename;"
+          "      cachedConfig = JSON.parse(JSON.stringify(config));"
+          "      $('playMode').value = configInfo.playbackMode;"
+          // Update Volume
+          "      if(configInfo.volume !== undefined) {"
+          "        $('volumeControl').value = $('volumeValue').textContent = configInfo.volume;"
+          "      }"
+          // Populate Line Select
+          "      populateSelector('lineSelect', config.lines, null);"
+          "      return api('/getCurrentSelections').then(r => r.json());"
+          "    })"
+          "    .then(sel => {"
+          "      if(!sel?.line || !sel?.station || !sel?.track || !cachedConfig?.lines?.[sel.line]) return;"
+          "      setEl($('lineSelect'), 'value', sel.line);"
+          "      populateSelector('stationSelect', cachedConfig.lines[sel.line].stations, sel.station);"
+          "      setEl($('stationSelect'), 'value', sel.station);"
+          // Populate Station Select
+          "      const stationData = cachedConfig.lines[sel.line].stations[sel.station];"
+          "      if(stationData?.t?.length > 0) {"
+          "        const tracks = {};"
+          "        stationData.t.forEach(trackArray => {"
+          "          if(trackArray?.length > 0) tracks[trackArray[0]] = trackArray[0];"
+          "        });"
+          "        populateSelector('trackSelect', tracks, sel.track);"
+          "        setEl($('trackSelect'), 'value', sel.track);"
+          "        updateStationSign();"
+          "      }"
+          "    })"
+          "    .catch(e => { console.error('Error loading config:', e); cachedConfig = null; showModal('Error', '<div style=\"color:red;text-align:center;padding:10px;\">Failed to load configuration</div>'); });"
           "};"
           
           // Station change polling
@@ -848,26 +832,25 @@ void handleRoot() {
           "    .then(r => r.json())"
           "    .then(data => {"
           "      lastStationCounter = data.counter;"
-          "      if (!data.changed) return;"
-          "      console.log('Station changed to:', data.station, 'Counter:', data.counter);"
-          "      if ($('lineSelect').value !== data.line) {"
-          "        setSelectValue('lineSelect', data.line);"
+          "      if(!data.changed) return;"
+          // Update Line Select
+          "      if($('lineSelect').value !== data.line) {"
+          "        setEl($('lineSelect'), 'value', data.line);"
           "        populateSelector('stationSelect', cachedConfig.lines[data.line].stations, data.station);"
           "      }"
-          "      setSelectValue('stationSelect', data.station);"
+          // Populate Station Select
+          "      setEl($('stationSelect'), 'value', data.station);"
           "      const stationData = cachedConfig.lines[data.line].stations[data.station];"
-          "      if (stationData?.t?.length > 0) {"
+          // Populate Track Select
+          "      if(stationData?.t?.length > 0) {"
           "        const tracks = {};"
           "        stationData.t.forEach(trackArray => {"
-          "          if (trackArray?.length > 0) {"
-          "            const trackKey = trackArray[0];"
-          "            tracks[trackKey] = trackKey;"
-          "          }"
+          "          if(trackArray?.length > 0) tracks[trackArray[0]] = trackArray[0];"
           "        });"
           "        populateSelector('trackSelect', tracks, data.track);"
-          "        setSelectValue('trackSelect', data.track);"
+          "        setEl($('trackSelect'), 'value', data.track);"
+          
           "        api(`/updateStationSign?line=${data.line}&station=${data.station}&track=${data.track}`)"
-          "          .then(response => response.ok ? response : Promise.reject('Failed to update'))"
           "          .then(() => updateStationSign())"
           "          .catch(error => console.error('Error updating station sign:', error));"
           "      }"
@@ -876,24 +859,41 @@ void handleRoot() {
           "};"
           
           // Initialize everything
+          "window.onclick = (event) => {"
+          "  const modal = document.getElementById('appModal');"
+          "  if (event.target === modal) {"
+          "    closeModal();"
+          "  }"
+          "};"
+          
           "const init = () => {"
-            // Setup event listeners
+            // Set up event listeners
           "  $('configFile').addEventListener('change', uploadConfig);"
           "  $('playMode').addEventListener('change', () => {"
           "    api(`/setPlaybackMode?mode=${$('playMode').value}`)"
-          "      .then(response => response.ok ? response.text() : Promise.reject('Failed to set mode'))"
-          "      .catch(error => console.error('Error:', error));"
+          "      .then(r => r.ok ? r.text() : Promise.reject('Failed to set mode'))"
+          "      .catch(e => { console.error('Error:', e); msgModal('Error', 'Failed to set playback mode'); });"
           "  });"
+          // Update Station Select
           "  $('lineSelect').addEventListener('change', updateStationSelect);"
           "  $('stationSelect').addEventListener('change', () => { updateTrackSelect(); updateStationSign(); });"
           "  $('trackSelect').addEventListener('change', updateStationSign);"
           "  window.addEventListener('load', () => setTimeout(updateLineMarkerPosition, 10));"
+          
             // Initialize data and polling
           "  loadConfig();"
           "  setInterval(pollStationChanges, 5000);"
           "};"
-          
+
           "init();"
+
+          // Show System Info Modal
+          "const showSystemInfo = () => {"
+          "  api('/getSystemInfo')"
+          "    .then(r => r.text())"
+          "    .then(html => showModal('System Information', html))"
+          "    .catch(e => { console.error('Error fetching system info:', e); msgModal('Error', 'Failed to fetch system information'); });"
+          "};"
           "</script></body></html>";
 
   server.send(200, "text/html", html);
@@ -1475,6 +1475,55 @@ void setupWebServer() {
       // No changes, return the current counter
       server.send(200, "application/json", "{\"changed\":false,\"counter\":" + String(stationChangeCounter) + "}");
     }
+  });
+
+
+  // Updated Get System Info endpoint that returns formatted HTML
+  server.on("/getSystemInfo", HTTP_GET, []() {
+    // Create formatted HTML string with monospace styling
+    String html = "<div style=\"font-family:monospace;white-space:pre-wrap;\">";
+    html += "Platform: " + String(ESP.getChipModel()) + "\n";
+    // Memory metrics
+    size_t freeHeap = ESP.getFreeHeap();
+    size_t totalHeap = ESP.getHeapSize();
+    float heapUsagePercent = 100.0f * (1.0f - ((float)freeHeap / totalHeap));
+    html += "Memory: " + String(heapUsagePercent, 1) + "% used (" + String(freeHeap / 1024) + " KB free)\n";
+    
+    // Flash metrics
+    uint32_t flashSize = ESP.getFlashChipSize();
+    uint32_t programSize = ESP.getSketchSize();
+    float flashUsagePercent = 100.0f * ((float)programSize / flashSize);
+    html += "Flash: " + String(flashUsagePercent, 1) + "% used (" + String((flashSize - programSize) / 1024) + " KB free)\n";
+    
+    // SPIFFS metrics
+    uint32_t totalBytes = SPIFFS.totalBytes();
+    uint32_t usedBytes = SPIFFS.usedBytes();
+    float spiffsUsagePercent = 100.0f * ((float)usedBytes / totalBytes);
+    html += "SPIFFS: " + String(spiffsUsagePercent, 1) + "% used (" + String((totalBytes - usedBytes) / 1024) + " KB free)\n";
+    
+    // Temperature
+    html += "CPU Temp: " + String(temperatureRead(), 1) + "°C\n";
+
+    //current state
+    html += "Line: " + currentStation.stationCodeLine + "\n";
+    html += "Station: " + currentStation.stationNameJa + " (" + currentStation.stationNameEn + ")\n";
+    html += "Track: " + currentStation.trackKey + "\n";
+    html += "Audio: Melody " + String(currentMelody) + 
+            ", ATOS " + String(currentAtos) + 
+            ", DoorChime " + String(currentDoorChime) + 
+            ", VA " + String(currentVA) + "\n";
+    html += "Volume: " + String(globalVolume) + "/30\n";
+    html += "WiFi: " + String(WiFi.status() == WL_CONNECTED ? "Connected" : "Disconnected") + "\n";
+    
+    if (WiFi.status() == WL_CONNECTED) {
+      html += "IP: " + WiFi.localIP().toString() + "\n";
+    }
+    
+
+    
+    html += "</div>";
+    
+    server.send(200, "text/html", html);
   });
 
   server.begin();

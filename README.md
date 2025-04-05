@@ -61,6 +61,11 @@ https://github.com/user-attachments/assets/d483ad4e-555a-42a0-9bc5-4ab3171fd644
 
 - **Real-time Controls**: Instant feedback and response to user inputs.
 
+- **Enhanced Error Handling**:
+  - Consistent modal dialogs for all errors and notifications.
+  - Clear visual feedback for success/error states with color-coding.
+  - Improved display of backend JSON parsing errors.
+
 <img src="https://github.com/user-attachments/assets/da28639d-7efb-4e0b-ba38-c74ee062fd0b" alt="WEB-UI" style="width:30%; height:auto; ">
 
 ### 🔧 System Features
@@ -72,6 +77,7 @@ https://github.com/user-attachments/assets/d483ad4e-555a-42a0-9bc5-4ab3171fd644
 - **Memory optimization**: Efficient handling of large JSON configuration files.
 - **Serial Output**: Detailed status logs for monitoring and debugging.
 - **Serial Shell**: Interactive command-line interface for device control and diagnostics.
+- **Improved Stability**: Enhanced stack sizes for critical tasks to prevent overflow errors.
 
 ---
 
@@ -171,13 +177,29 @@ You can use the included station config editor to create or modify configuration
 1. Access `http://[device-ip]/update`.
 2. Enter credentials when prompted:
    - **Default OTA Username**: `JR`
-   - **Default OTA Password**: `beru`
+   - **Default OTA Password**: `BERU`
 3. Select the new firmware file.
 4. Click upload to update.
 
 ---
 
 ## Version History
+
+### **ESP32-MCU-R0.4.16 WebUI-R3.2.8**
+
+- Enhanced error handling with consistent modal dialogs for all errors
+- Optimized JavaScript code for better performance and reduced size
+- Improved UI components with consistent styling and better feedback
+- Increased button handler task stack size for improved stability
+- Added better code organization with descriptive comments
+- Fixed JSON error parsing and display from backend responses
+
+### **ESP32-MCU-R0.4.15 WebUI-R3.2.7**
+
+- Improved error handling and user feedback
+- Enhanced stability for button handling
+- Fixed minor UI issues
+- Updated confirm dialogs to use the modal system
 
 ### **ESP32-MCU-R0.4.9 WebUI-R3.2.5**
 
@@ -213,7 +235,7 @@ The device outputs detailed status information via Serial (115200 baud rate). Us
 ===================
  JR-Beru Booting 
 ===================
-Firmware Version: ESP32-MCU-R0.4.9 WebUI-R3.2.5
+Firmware Version: ESP32-MCU-R0.4.16 WebUI-R3.2.8
 Initializing MP3-Player ... (May take 3~5 seconds)
 MP3-Player online.
 =====Audio File Count:=====
@@ -309,12 +331,12 @@ The device includes an interactive command-line interface accessible through the
 | `play atos` | Play current ATOS announcement |
 | `play chime` | Play current door chime |
 | `play va` | Play current platform announcement |
-| `list files` | List files on SPIFFS |
-| `list stations` | List available stations with their tracks |
+| `ls`  `/` | List files on SPIFFS |
+| `ls stations` or `list stations` | List available stations with their tracks |
 | `station [line] [station] [track]` | Set current station (e.g., `station JY Tokyo 4`) |
 | `reset player` | Reset the DFPlayer Mini |
 | `reset wifi` | Reset WiFi settings |
-| `restart` | Restart the ESP32 |
+| `reboot` | Restart the ESP32 |
 | `help` | Display list of available commands |
 
 ### Using the Serial Shell
@@ -328,22 +350,18 @@ The device includes an interactive command-line interface accessible through the
 Example session:
 ```
 JR-Beru_: help
-======== Available Commands ========
-health           - Display system health information
-status           - Display current station and playback status
-volume [0-30]    - Get or set volume level
-play melody      - Play current melody
-play atos        - Play current ATOS announcement
-play chime       - Play current door chime
-play va          - Play current platform announcement
-list files       - List files on SPIFFS
-list stations    - List available stations
-station [line] [station] [track] - Set current station
-reset player     - Reset the DFPlayer Mini
-reset wifi       - Reset WiFi settings
-restart          - Restart the ESP32
-help             - Display this help message
-====================================
+============= JR-Beru Shell Commands =============
+help               - Display help
+health             - Display system health information
+status             - Display current station and playback status
+volume             - Get or set volume level [0-30]
+play               - Play current melody/atos/chime/va
+index              - Reindex the file Count of the DFPlayer
+ls                 - List files on SPIFFS or available stations
+station            - Set current station [line] [station] [track]
+reset              - Reset the WiFi or DFPlayer
+reboot             - Restart ESP32
+===================================================
 JR-Beru_: status
 
 ======== Current Status ========
@@ -410,10 +428,6 @@ JR-Beru_:
 }
 ```
 
-
-
-
-
 ---
 
 ## Credits
@@ -426,7 +440,17 @@ JR-Beru_:
 
 ## License
 
-This project is released under the MIT License. See the `LICENSE` file for details.
+This project is released under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+
+This means you are free to:
+- Share — copy and redistribute the material in any medium or format
+- Adapt — remix, transform, and build upon the material
+
+Under the following terms:
+- Attribution — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+- NonCommercial — You may not use the material for commercial purposes.
+
+For more details: [Creative Commons BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)
 
 ---
 
