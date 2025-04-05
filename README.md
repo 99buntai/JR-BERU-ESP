@@ -218,7 +218,7 @@ Completed installation in the housing.
 
 ## Station Config Web Editor
 
-The Station Config Web Editor is a powerful tool that allows you to create and customize JR BERU configurations without manually editing JSON files. This editor features a user-friendly interface for configuring all aspects of your virtual train station.
+The Station Config Web Editor is a powerful tool that allows you to create and customize JR BERU configurations without manually editing JSON files. This editor features a user-friendly interface for configuring all the station/audioparameters in the JR-Beru system.
 
 ### Accessing the Editor
 
