@@ -130,7 +130,7 @@ https://github.com/user-attachments/assets/a7837b30-74a7-4988-9690-bed131612baa
 | GPIO4  | Main Button Input |
 
 <p align="left">
-  <img src="https://github.com/user-attachments/assets/b787667a-7ce2-4cbd-90f3-d3548ace1503" alt="Wiring Diagram" width="50%">
+  <img src="https://github.com/user-attachments/assets/b787667a-7ce2-4cbd-90f3-d3548ace1503" alt="Wiring Diagram" width="70%">
 </p>
 
 
